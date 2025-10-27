@@ -27,11 +27,31 @@
   color: rgba(255, 255, 255, 0.85);
 }
 
+.home-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
 .home-section-title {
   font-size: 1.8rem;
   color: #00b4d8;
   margin-bottom: 1rem;
   text-align: left;
+}
+
+.genre-filter {
+  background: rgba(0, 180, 216, 0.25);
+  border: none;
+  border-radius: 6px;
+  padding: 0.4rem 0.8rem;
+  color: black;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.genre-filter option {
+  color: black;
 }
 
 .home-content {
@@ -63,6 +83,8 @@
 
 .movie-card img {
   width: 100%;
+  height: 270px;
+  object-fit: cover;
   border-radius: 8px;
   margin-bottom: 0.5rem;
 }

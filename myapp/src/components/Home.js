@@ -9,6 +9,7 @@ export default function Home() {
   const [movies, setMovies] = useState([]);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedGenre, setSelectedGenre] = useState('All');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -16,12 +17,10 @@ export default function Home() {
       try {
         setIsLoading(true);
         setError(null);
-
-        const response = await fetch('/movies-series'); 
+        const response = await fetch('/movies-series');
         if (!response.ok) {
           throw new Error('Error loading movies');
         }
-
         const data = await response.json();
         setMovies(data);
       } catch (err) {
@@ -31,9 +30,14 @@ export default function Home() {
         setIsLoading(false);
       }
     };
-
     fetchMovies();
   }, []);
+
+  const genres = ['All', ...new Set(movies.flatMap((m) => m.genres || []))];
+  const filteredMovies =
+    selectedGenre === 'All'
+      ? movies
+      : movies.filter((m) => m.genres && m.genres.includes(selectedGenre));
 
   return (
     <div className="home-page">
@@ -48,9 +52,23 @@ export default function Home() {
 
         {!isLoading && !error && (
           <>
-            <h2 className="home-section-title">Your Movie List</h2>
+            <div className="home-section-header">
+              <h2 className="home-section-title">Your Movie List</h2>
+              <select
+                className="genre-filter"
+                value={selectedGenre}
+                onChange={(e) => setSelectedGenre(e.target.value)}
+              >
+                {genres.map((genre) => (
+                  <option key={genre} value={genre}>
+                    {genre}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <div className="home-rail-movies">
-              {movies.map((movie) => (
+              {filteredMovies.map((movie) => (
                 <div
                   key={movie._id}
                   className="movie-card"
