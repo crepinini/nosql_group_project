@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './Home.css';
 
 const FALLBACK_POSTER =
@@ -8,6 +9,7 @@ export default function Home() {
   const [movies, setMovies] = useState([]);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchMovies = async () => {
@@ -49,7 +51,12 @@ export default function Home() {
             <h2 className="home-section-title">Your Movie List</h2>
             <div className="home-rail-movies">
               {movies.map((movie) => (
-                <div key={movie._id} className="movie-card">
+                <div
+                  key={movie._id}
+                  className="movie-card"
+                  onClick={() => navigate(`/movies-series/${movie._id}`)}
+                  style={{ cursor: 'pointer' }}
+                >
                   <img
                     src={movie.poster_url || FALLBACK_POSTER}
                     alt={movie.title}
@@ -57,8 +64,7 @@ export default function Home() {
                   />
                   <h3>{movie.title}</h3>
                   <p className="movie-meta">
-                    {movie.year ? movie.year : 'N/A'} •{' '}
-                    {movie.imdb_type || 'Unknown'}
+                    {movie.year ? movie.year : 'N/A'} • {movie.imdb_type || 'Unknown'}
                   </p>
                   {movie.rating && (
                     <p className="movie-rating">⭐ {Number(movie.rating).toFixed(1)}</p>
@@ -79,3 +85,4 @@ export default function Home() {
     </div>
   );
 }
+
