@@ -1,12 +1,12 @@
 import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
-import HomePage from './pages/HomePage';
 import MoviesPage from './pages/MoviesPage';
 import SeriesPage from './pages/SeriesPage';
 import ActorsPage from './pages/ActorsPage';
 import ProfilePage from './pages/ProfilePage';
 import ActorDetailPage from './pages/ActorDetailPage';
 import MovieDetailPage from './pages/MovieDetailPage';
+import Home from './components/Home';
 import './App.css';
 
 const NotFound = () => (
@@ -27,7 +27,7 @@ function App() {
         <main className="app-content">
           <Routes>
             <Route path="/" element={<Navigate to="/home" replace />} />
-            <Route path="/home" element={<HomePage />} />
+            <Route path="/home" element={<Home />} />
             <Route path="/movies" element={<MoviesPage />} />
             <Route path="/series" element={<SeriesPage />} />
             <Route path="/actors" element={<ActorsPage />} />

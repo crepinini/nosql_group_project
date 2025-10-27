@@ -1,0 +1,110 @@
+.home-page {
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
+  margin: 0 auto;
+  max-width: 1180px;
+  padding: 3rem 2rem;
+  color: #f2f2f2;
+}
+
+.home-hero {
+  text-align: center;
+  background: rgba(0, 180, 216, 0.1);
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+}
+
+.home-hero h1 {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  color: #00b4d8;
+}
+
+.home-hero p {
+  font-size: 1.2rem;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.home-section-title {
+  font-size: 1.8rem;
+  color: #00b4d8;
+  margin-bottom: 1rem;
+  text-align: left;
+}
+
+.home-content {
+  width: 100%;
+  max-width: 1200px;
+}
+
+.home-rail-movies {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  justify-content: center;
+}
+
+.movie-card {
+  background: rgba(9, 11, 19, 0.85);
+  border-radius: 12px;
+  padding: 1rem;
+  width: 180px;
+  text-align: center;
+  transition: transform 0.2s ease, box-shadow 0.3s ease;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.4);
+}
+
+.movie-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 20px rgba(0, 180, 216, 0.25);
+}
+
+.movie-card img {
+  width: 100%;
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+}
+
+.movie-card h3 {
+  font-size: 1rem;
+  margin: 0.5rem 0 0.2rem;
+}
+
+.movie-meta {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.movie-rating {
+  color: #ffd700;
+  font-weight: bold;
+  font-size: 0.95rem;
+}
+
+.movie-genres {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  justify-content: center;
+  margin-top: 0.4rem;
+}
+
+.movie-genre-badge {
+  background: rgba(0, 180, 216, 0.25);
+  border-radius: 6px;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.75rem;
+}
+
+.loading,
+.error {
+  text-align: center;
+  font-size: 1.1rem;
+}
+
+.error {
+  color: #ff6b6b;
+}
