@@ -4,14 +4,15 @@ services:
     container_name: api_movies_series
     ports:
       - "5000:5000"
-    environment:
-      - MONGO_URI=mongodb://mongodb:27017/
-      - REDIS_HOST=redis
-      - CACHE_TTL_SECONDS=120
-      - MOVIES_DATA_FILE=/app/data/movies_data.json
     depends_on:
       - mongodb
       - redis
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017/
+      - REDIS_URL=redis://redis:6379/0
+      - REDIS_HOST=redis
+      - CACHE_TTL_SECONDS=120
+      - MOVIES_DATA_FILE=/app/data/movies_data.json
     volumes:
       - ./api/api_movies_series:/app
       - ./data/movies_data.json:/app/data/movies_data.json:ro
@@ -20,15 +21,16 @@ services:
     build: ./api/api_users
     container_name: api_users
     ports:
-      - "5004:5004"
-    environment:
-      - MONGO_URI=mongodb://mongodb:27017/
-      - REDIS_HOST=redis
-      - CACHE_TTL_SECONDS=120
-      - USERS_DATA_FILE=/app/data/users_data.json
+      - "5001:5001"
     depends_on:
       - mongodb
       - redis
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017/
+      - REDIS_URL=redis://redis:6379/0
+      - REDIS_HOST=redis
+      - CACHE_TTL_SECONDS=120
+      - USERS_DATA_FILE=/app/data/users_data.json
     volumes:
       - ./api/api_users:/app
       - ./data/users_data.json:/app/data/users_data.json:ro
@@ -39,14 +41,15 @@ services:
     container_name: api_people
     ports:
       - "5002:5002"
-    environment:
-      - MONGO_URI=mongodb://mongodb:27017/
-      - REDIS_HOST=redis
-      - CACHE_TTL_SECONDS=120
-      - PEOPLE_DATA_FILE=/app/data/people_data.json
     depends_on:
       - mongodb
       - redis
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017/
+      - REDIS_URL=redis://redis:6379/0
+      - REDIS_HOST=redis
+      - CACHE_TTL_SECONDS=120
+      - PEOPLE_DATA_FILE=/app/data/people_data.json
     volumes:
       - ./api/api_people:/app
       - ./data/people_data.json:/app/data/people_data.json:ro
@@ -61,19 +64,18 @@ services:
       - "3000:3000"
     environment:
       - CHOKIDAR_USEPOLLING=true
-      # These are read by src/setupProxy.js inside the container:
       - MOVIES_API_TARGET=http://api_movies_series:5000
       - PEOPLE_API_TARGET=http://api_people:5002
-      - USERS_API_TARGET=http://api_users:5004
-    depends_on:
-      - api_movies_series
-      - api_users
-      - api_people
+      - USERS_API_TARGET=http://api_users:5001
     volumes:
       - ./myapp:/app
       - /app/node_modules
     stdin_open: true
     tty: true
+    depends_on:
+      - api_movies_series
+      - api_users
+      - api_people
 
   mongodb:
     image: mongo:7
@@ -82,7 +84,6 @@ services:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
-      # seed files (optional, if you use them)
       - ./data/movies_data.json:/docker-entrypoint-initdb.d/movies_data.json:ro
       - ./data/people_data.json:/docker-entrypoint-initdb.d/people_data.json:ro
       - ./data/users_data.json:/docker-entrypoint-initdb.d/users_data.json:ro
@@ -96,9 +97,9 @@ services:
     restart: unless-stopped
     ports:
       - "6379:6379"
-    command: ["redis-server", "--save", "60", "1", "--appendonly", "yes"]
     volumes:
-      - redis_data:/data
+      - ./redis_data:/data
+    command: ["redis-server", "--save", "60", "1", "--appendonly", "yes"]
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -112,7 +113,7 @@ services:
     ports:
       - "5540:5540"
     volumes:
-      - redisinsight_data:/db
+      - ./redisinsight_data:/db
     depends_on:
       redis:
         condition: service_healthy

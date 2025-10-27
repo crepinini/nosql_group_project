@@ -12,7 +12,9 @@ const PEOPLE_API_TARGET =
   'http://localhost:5002';
 
 const USERS_API_TARGET =
-  process.env.USERS_API_TARGET || 'http://localhost:5004';
+  process.env.USERS_API_TARGET ||
+  process.env.REACT_APP_USERS_API_BASE_URL ||
+  'http://localhost:5001';
 
 // --- Register proxy middlewares ---
 module.exports = function setupProxy(app) {
@@ -44,13 +46,13 @@ module.exports = function setupProxy(app) {
 
   // Users service (profile, favorites, friends)
   app.use(
-    ['/myprofile', '/mylist', '/myfriends', '/my_friends'],
+    ['/users', '/users/*', '/myprofile', '/mylist', '/myfriends', '/my_friends'],
     createProxyMiddleware({
       target: USERS_API_TARGET,
       changeOrigin: true,
       secure: false,
       ws: false,
-      logLevel: 'debug', // change to 'warn' later if you want less console output
+      logLevel: 'warn',
     }),
   );
 };

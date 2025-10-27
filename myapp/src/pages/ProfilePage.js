@@ -7,7 +7,7 @@ export default function ProfilePage() {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const response = await fetch("/myprofile?user_id=U000000000001");
+        const response = await fetch("/myprofile?user_id=u000000000001");
         if (!response.ok) throw new Error("Failed to fetch profile");
         const data = await response.json();
         setProfile(data);

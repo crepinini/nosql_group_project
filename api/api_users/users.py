@@ -1,58 +1,116 @@
-import os
 import json
+import os
+
 from bson import ObjectId
+from bson.errors import InvalidId
 from flask import Flask, jsonify, request
 from pymongo import MongoClient
 import redis
 
-app = Flask(__name__)
 
-# ---- Connections -------------------------------------------------------------
+app = Flask(__name__)
+app.config["JSON_SORT_KEYS"] = False
+
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
 client = MongoClient(MONGO_URI)
 db = client["api_users"]
-
-my_friends_collection = db["my_friends"]
 users_collection = db["users"]
+my_friends_collection = db["my_friends"]
 
 r = redis.Redis(
     host=os.environ.get("REDIS_HOST", "localhost"),
     port=int(os.environ.get("REDIS_PORT", 6379)),
     db=int(os.environ.get("REDIS_DB", 0)),
-    decode_responses=True,  # store/read strings -> simpler json.dumps/loads
 )
 
 CACHE_TTL_SECONDS = int(os.environ.get("CACHE_TTL_SECONDS", 60))
 
 
-# ---- Helpers -----------------------------------------------------------------
-def serialize_id(doc):
-    """Return a shallow copy with _id converted to string (if present)."""
-    if not doc:
-        return doc
-    out = dict(doc)
-    if "_id" in out and not isinstance(out["_id"], str):
-        out["_id"] = str(out["_id"])
-    return out
+def serialize_document(document):
+    if not document:
+        return {}
+    payload = dict(document)
+    if "_id" in payload and not isinstance(payload["_id"], str):
+        payload["_id"] = str(payload["_id"])
+    return payload
 
 
-def find_user_any_id(user_id: str, projection=None):
-    """
-    Find a user by either imdb_user_id or _id (case-insensitive).
-    Works with values like 'ur123...' or 'U000000000001' (or lower-case).
-    """
-    query = {
-        "$or": [
-            {"imdb_user_id": user_id},
-            {"_id": user_id},
-            {"imdb_user_id": {"$regex": f"^{user_id}$", "$options": "i"}},
-            {"_id": {"$regex": f"^{user_id}$", "$options": "i"}},
-        ]
-    }
+def build_cache_key(prefix, *parts):
+    normalized = [prefix]
+    for part in parts:
+        normalized.append(str(part) if part is not None else "")
+    return ":".join(normalized)
+
+
+def find_user(identifier, projection=None):
+    if not identifier:
+        return None
+
+    criteria = [
+        {"_id": identifier},
+        {"username": identifier},
+        {"imdb_user_id": identifier},
+        {"_id": {"$regex": f"^{identifier}$", "$options": "i"}},
+        {"username": {"$regex": f"^{identifier}$", "$options": "i"}},
+    ]
+
+    try:
+        criteria.append({"_id": ObjectId(identifier)})
+    except (InvalidId, TypeError):
+        pass
+
+    query = {"$or": criteria}
     return users_collection.find_one(query, projection)
 
 
-# ---- Routes: Friends ---------------------------------------------------------
+@app.route("/users", methods=["GET"])
+def list_users():
+    search = request.args.get("q")
+    limit_param = request.args.get("limit")
+
+    try:
+        limit = int(limit_param) if limit_param else None
+        if limit is not None:
+            limit = max(1, limit)
+    except ValueError:
+        limit = None
+
+    cache_key = build_cache_key("users", search or "", limit_param or "")
+    cached = r.get(cache_key)
+    if cached:
+        print("users cache hit!")
+        return jsonify(json.loads(cached))
+
+    query = {}
+    if search:
+        regex = {"$regex": search, "$options": "i"}
+        query = {"$or": [{"username": regex}, {"full_name": regex}]}
+
+    cursor = users_collection.find(query)
+    if limit:
+        cursor = cursor.limit(limit)
+
+    documents = [serialize_document(doc) for doc in cursor]
+    r.setex(cache_key, CACHE_TTL_SECONDS, json.dumps(documents))
+    return jsonify(documents)
+
+
+@app.route("/users/<user_id>", methods=["GET"])
+def get_user_detail(user_id):
+    cache_key = build_cache_key("user_detail", user_id)
+    cached = r.get(cache_key)
+    if cached:
+        print("user detail cache hit!")
+        return jsonify(json.loads(cached))
+
+    document = find_user(user_id)
+    if not document:
+        return jsonify({"error": "User not found"}), 404
+
+    serialized = serialize_document(document)
+    r.setex(cache_key, CACHE_TTL_SECONDS, json.dumps(serialized))
+    return jsonify(serialized)
+
 @app.route("/myfriends", methods=["GET"])
 def get_my_friends():
     cache_key = "my_friends_list"
@@ -61,83 +119,84 @@ def get_my_friends():
         print("cache hit! /myfriends")
         return jsonify(json.loads(cached))
 
-    print("cache miss /myfriends -> Mongo")
-    friends = [serialize_id(x) for x in my_friends_collection.find()]
+    friends = [serialize_document(friend) for friend in my_friends_collection.find()]
     r.setex(cache_key, CACHE_TTL_SECONDS, json.dumps(friends))
     return jsonify(friends)
 
 
 @app.route("/my_friends/<friend_id>", methods=["GET"])
 def get_my_friend(friend_id):
-    cache_key = f"friend:{friend_id}"
+    cache_key = build_cache_key("friend", friend_id)
     cached = r.get(cache_key)
     if cached:
         print("cache hit! /my_friends/<id>")
         return jsonify(json.loads(cached))
 
-    # Try ObjectId, then string _id
+    friend = None
     try:
-        doc = my_friends_collection.find_one({"_id": ObjectId(friend_id)})
-    except Exception:
-        doc = my_friends_collection.find_one({"_id": friend_id})
+        friend = my_friends_collection.find_one({"_id": ObjectId(friend_id)})
+    except (InvalidId, TypeError):
+        pass
 
-    if not doc:
+    if not friend:
+        friend = my_friends_collection.find_one({"_id": friend_id})
+
+    if not friend:
         return jsonify({"error": "Friend not found"}), 404
 
-    doc = serialize_id(doc)
-    r.setex(cache_key, CACHE_TTL_SECONDS, json.dumps(doc))
-    return jsonify(doc)
+    serialized = serialize_document(friend)
+    r.setex(cache_key, CACHE_TTL_SECONDS, json.dumps(serialized))
+    return jsonify(serialized)
 
 
-# ---- Routes: Profile & Favorites --------------------------------------------
 @app.route("/myprofile", methods=["GET"])
 def get_profile():
-    user_id = request.args.get("user_id", "ur12345678")
-    cache_key = f"profile:{user_id}"
+    user_id = request.args.get("user_id")
+    if not user_id:
+        return jsonify({"error": "user_id query parameter is required"}), 400
+
+    cache_key = build_cache_key("profile", user_id)
     cached = r.get(cache_key)
     if cached:
         print("cache hit! /myprofile")
         return jsonify(json.loads(cached))
 
-    print("cache miss /myprofile -> Mongo")
-    user = find_user_any_id(user_id)
+    user = find_user(user_id)
     if not user:
         return jsonify({"error": "Profile not found"}), 404
 
-    user = serialize_id(user)
-    r.setex(cache_key, CACHE_TTL_SECONDS, json.dumps(user))
-    return jsonify(user)
+    serialized = serialize_document(user)
+    r.setex(cache_key, CACHE_TTL_SECONDS, json.dumps(serialized))
+    return jsonify(serialized)
 
 
 @app.route("/mylist", methods=["GET"])
 def get_my_list():
     user_id = request.args.get("user_id", "ur12345678")
     limit_param = request.args.get("limit")
+
     try:
         limit = int(limit_param) if limit_param else None
     except ValueError:
         limit = None
 
-    cache_key = f"favorites:{user_id}:{limit if limit else 'all'}"
+    cache_key = build_cache_key("favorites", user_id, limit if limit is not None else "all")
     cached = r.get(cache_key)
     if cached:
         print("cache hit! /mylist")
         return jsonify(json.loads(cached))
 
-    print("cache miss /mylist -> Mongo")
-    doc = find_user_any_id(user_id, projection={"_id": 0, "favorites": 1})
-    if not doc or "favorites" not in doc:
+    document = find_user(user_id, projection={"favorites": 1, "_id": 0})
+    if not document or "favorites" not in document:
         return jsonify({"error": "Favorites not found"}), 404
 
-    favorites = doc["favorites"] or []
-    if limit is not None and limit > 0:
-        favorites = favorites[:limit]
+    favorites = document.get("favorites") or []
+    if limit is not None:
+        favorites = favorites[: max(limit, 0)]
 
     r.setex(cache_key, CACHE_TTL_SECONDS, json.dumps(favorites))
     return jsonify(favorites)
 
 
-# ---- Main --------------------------------------------------------------------
 if __name__ == "__main__":
-    # Port 5004 to match your docker-compose and proxy
-    app.run(host="0.0.0.0", port=5004, debug=True)
+    app.run(host="0.0.0.0", port=5001, debug=True)
