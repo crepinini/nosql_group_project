@@ -109,9 +109,34 @@
   white-space: pre-line;
 }
 
+.person-detail__biography--clamped {
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 .person-detail__biography--muted {
   color: rgba(255, 255, 255, 0.6);
   font-style: italic;
+}
+
+.person-detail__biography-toggle {
+  align-self: flex-start;
+  background: transparent;
+  border: none;
+  color: rgba(56, 189, 248, 0.85);
+  cursor: pointer;
+  font-weight: 600;
+  margin-top: 0.5rem;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.person-detail__biography-toggle:hover,
+.person-detail__biography-toggle:focus-visible {
+  color: #38bdf8;
+  outline: none;
 }
 
 .person-detail__known-for {

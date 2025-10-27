@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { Link } from 'react-router-dom';
 import './PersonDetail.css';
@@ -33,6 +33,12 @@ const extractYear = (entry) => {
 };
 
 const PersonDetail = ({ person, knownForDetails = [] }) => {
+  const [isBiographyExpanded, setBiographyExpanded] = useState(false);
+
+  useEffect(() => {
+    setBiographyExpanded(false);
+  }, [person?.biography]);
+
   if (!person) {
     return null;
   }
@@ -60,6 +66,18 @@ const PersonDetail = ({ person, knownForDetails = [] }) => {
         return entry;
       })
     : knownForDetails || [];
+
+  const biographyText = typeof biography === 'string' ? biography : '';
+  const shouldClampBiography = biographyText.trim().length > 400;
+
+  const biographyClassName = [
+    'person-detail__biography',
+    shouldClampBiography && !isBiographyExpanded
+      ? 'person-detail__biography--clamped'
+      : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   return (
     <section className="person-detail" aria-labelledby="person-detail-title">
@@ -99,8 +117,19 @@ const PersonDetail = ({ person, knownForDetails = [] }) => {
             </div>
           ) : null}
 
-          {biography ? (
-            <p className="person-detail__biography">{biography}</p>
+          {biographyText ? (
+            <>
+              <p className={biographyClassName}>{biographyText}</p>
+              {shouldClampBiography ? (
+                <button
+                  type="button"
+                  className="person-detail__biography-toggle"
+                  onClick={() => setBiographyExpanded((prev) => !prev)}
+                >
+                  {isBiographyExpanded ? 'See less' : 'See more'}
+                </button>
+              ) : null}
+            </>
           ) : (
             <p className="person-detail__biography person-detail__biography--muted">
               We don&apos;t have a biography for this person just yet.
