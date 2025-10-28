@@ -73,9 +73,9 @@ const ProfilePage = () => {
       <p>🎂 {profile.birthdate}</p>
       <p>📍 {profile.location_city}, {profile.location_country}</p>
 
-      <h3>Favorites</h3>
+      <h3>Favorite Movies</h3>
       <ul>
-        {profile.favorites?.map((fav, index) => (
+        {profile.favorites_movies?.map((fav, index) => (
           <li key={fav._id || index}>{fav._id || 'Unknown title'}</li>
         ))}
       </ul>
