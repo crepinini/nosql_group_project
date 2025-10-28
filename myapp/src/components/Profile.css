@@ -1,0 +1,99 @@
+.profile-page {
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
+  margin: 0 auto;
+  max-width: 1180px;
+  padding: 3rem 2rem;
+  color: #f2f2f2;
+}
+
+
+.profile-hero {
+  background: rgba(0, 180, 216, 0.1);
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+}
+
+.profile-hero h1 {
+  font-size: 2rem;
+  margin: 0 0 .5rem 0;
+  color: #00b4d8;
+}
+
+.profile-handle {
+  opacity: .85;
+  margin-bottom: .75rem;
+}
+
+.profile-about {
+  max-width: 900px;
+  line-height: 1.6;
+  margin: .5rem auto 0 auto;
+  color: rgba(255,255,255,.9);
+  text-align: center;
+}
+
+.profile-meta {
+  margin-top: .75rem;
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  opacity: .9;
+}
+.profile-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.profile-section-title {
+  font-size: 1.6rem;
+  color: #00b4d8;
+  margin: 0 0 1rem 0;
+  text-align: left;
+}
+
+.stat-pills {
+  display: flex;
+  gap: .5rem;
+  flex-wrap: wrap;
+}
+
+.stat-pill {
+  background: rgba(0, 180, 216, 0.25);
+  border-radius: 999px;
+  padding: .25rem .65rem;
+  font-size: .9rem;
+  color: #ffffff;
+}
+
+.profile-rail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  justify-content: center;
+}
+
+
+.profile-empty {
+  text-align: center;
+  opacity: .8;
+}
+
+.review-card {
+  background: rgba(9, 11, 19, 0.85);
+  border-radius: 12px;
+  padding: 1rem;
+  width: 320px;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.4);
+}
+
+.review-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  justify-content: center;
+}
