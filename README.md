@@ -1,2 +1,30 @@
 # nosql_group_project
 Movies Series App
+
+# References
+- https://github.com/iamshaunjp/Complete-React-Tutorial/tree/lesson-32/dojo-blog
+- https://github.com/daccotta-org/daccotta
+- https://github.com/iamshaunjp/docker-crash-course/tree/lesson-12
+- https://dev.to/vguleaev/dockerize-a-react-app-with-node-js-backend-connected-to-mongodb-10ai
+- https://www.geeksforgeeks.org/reactjs/movie-trailer-app-using-reactjs/
+- https://www.geeksforgeeks.org/reactjs/movie-web-application-with-reactjs/
+- https://www.geeksforgeeks.org/devops/how-to-dockerize-a-reactjs-app/
+- https://www.youtube.com/watch?v=3Nb4DrpnUks
+- https://react.dev/learn/creating-a-react-app
+- https://github.com/CodeBlessYou/movie-maniac
+- https://www.themoviedb.org/
+- https://www.imdb.com/
+- https://www.mongodb.com/resources/products/compatibilities/setting-up-flask-with-mongodb
+- https://stackoverflow.com/questions/51350198/which-ports-do-i-use-to-send-get-requests-for-a-full-stack-vue-flask-mongodb-pro
+- https://medium.com/analytics-vidhya/creating-dockerized-flask-mongodb-application-20ccde391a
+- https://ishmeet1995.medium.com/how-to-create-restful-crud-api-with-python-flask-mongodb-and-docker-8f6ccb73c5bc
+
+- https://www.freecodecamp.org/news/how-to-build-a-fullstack-authentication-system-with-react-express-mongodb-heroku-and-netlify/
+- https://kouohhashi.medium.com/simple-authentication-with-react-and-mongodb-dd2828cc4f16
+- https://www.youtube.com/watch?v=3-Qqn01Z2aU
+- https://www.mongodb.com/community/forums/t/how-to-automatically-login-users-after-email-password-authentication/100335
+- https://stackoverflow.com/questions/74298610/how-can-i-implement-the-logout-functionality-using-node-js-and-mongodb
+- https://www.geeksforgeeks.org/node-js/login-form-using-node-js-and-mongodb/
+- https://github.com/parthasarathy27/Reactpage-login
+- https://tutorialrays.in/building-a-complete-authentication-system-with-react-redux-node-js-and-mongodb/
+- https://www.youtube.com/watch?v=S9eCBX-Re8A
