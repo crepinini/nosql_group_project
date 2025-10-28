@@ -18,7 +18,13 @@ const ProfilePage = () => {
     const controller = new AbortController();
     const loadProfile = async () => {
       try {
-        setIsLoading(true);
+        const hasCachedDetails =
+          Array.isArray(authUser.favorites_movies) ||
+          Array.isArray(authUser.favorites);
+        if (!hasCachedDetails) {
+          setIsLoading(true);
+        }
+
         const userId = authUser._id || authUser.username;
         const response = await fetch(
           buildUsersUrl(`/myprofile?user_id=${encodeURIComponent(userId)}`),
