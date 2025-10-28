@@ -46,7 +46,7 @@ module.exports = function setupProxy(app) {
 
   // Users service (profile, favorites, friends)
   app.use(
-    ['/users', '/users/*', '/myprofile', '/mylist', '/myfriends', '/my_friends'],
+    ['/users', '/users/*', '/auth', '/auth/*', '/myprofile', '/mylist', '/myfriends', '/my_friends'],
     createProxyMiddleware({
       target: USERS_API_TARGET,
       changeOrigin: true,

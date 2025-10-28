@@ -32,6 +32,7 @@ def serialize_document(document):
     payload = dict(document)
     if "_id" in payload and not isinstance(payload["_id"], str):
         payload["_id"] = str(payload["_id"])
+    payload.pop("password", None)
     return payload
 
 
@@ -111,6 +112,23 @@ def get_user_detail(user_id):
     r.setex(cache_key, CACHE_TTL_SECONDS, json.dumps(serialized))
     return jsonify(serialized)
 
+
+@app.route("/auth/login", methods=["POST"])
+def authenticate_user():
+    payload = request.get_json(silent=True) or {}
+    username = (payload.get("username") or "").strip()
+    password = payload.get("password") or ""
+
+    if not username or not password:
+        return jsonify({"error": "Username and password are required"}), 400
+
+    user = find_user(username)
+    if not user or user.get("password") != password:
+        return jsonify({"error": "Invalid credentials"}), 401
+
+    serialized = serialize_document(user)
+    return jsonify(serialized)
+
 @app.route("/myfriends", methods=["GET"])
 def get_my_friends():
     cache_key = "my_friends_list"
@@ -172,7 +190,9 @@ def get_profile():
 
 @app.route("/mylist", methods=["GET"])
 def get_my_list():
-    user_id = request.args.get("user_id", "ur12345678")
+    user_id = request.args.get("user_id")
+    if not user_id:
+        return jsonify({"error": "user_id query parameter is required"}), 400
     limit_param = request.args.get("limit")
 
     try:
@@ -186,11 +206,11 @@ def get_my_list():
         print("cache hit! /mylist")
         return jsonify(json.loads(cached))
 
-    document = find_user(user_id, projection={"favorites": 1, "_id": 0})
-    if not document or "favorites" not in document:
+    projection = {"favorites_movies": 1, "_id": 0}
+    document = find_user(user_id, projection=projection)
+    favorites = document.get("favorites_movies") if document else None
+    if favorites is None:
         return jsonify({"error": "Favorites not found"}), 404
-
-    favorites = document.get("favorites") or []
     if limit is not None:
         favorites = favorites[: max(limit, 0)]
 

@@ -1,0 +1,107 @@
+.login {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  min-height: clamp(480px, 70vh, 720px);
+  padding: 2rem;
+}
+
+.login__card {
+  background: linear-gradient(155deg, rgba(15, 18, 34, 0.92), rgba(32, 55, 99, 0.88));
+  border-radius: 28px;
+  box-shadow: 0 26px 60px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-width: 420px;
+  padding: 2.5rem 3rem;
+  width: min(100%, 420px);
+}
+
+.login__title {
+  color: #f8fafc;
+  font-size: 1.85rem;
+  font-weight: 700;
+  margin: 0;
+  text-align: center;
+}
+
+.login__subtitle {
+  color: rgba(226, 232, 240, 0.7);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin: 0;
+  text-align: center;
+}
+
+.login__form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.login__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  color: rgba(226, 232, 240, 0.75);
+  font-size: 0.9rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.login__field input {
+  background: rgba(10, 14, 28, 0.88);
+  border: 1px solid rgba(148, 163, 184, 0.32);
+  border-radius: 14px;
+  color: #f8fafc;
+  font-size: 1rem;
+  padding: 0.75rem 1rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.login__field input:focus-visible {
+  border-color: rgba(56, 189, 248, 0.75);
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.25);
+  outline: none;
+}
+
+.login__error {
+  background: rgba(248, 113, 113, 0.18);
+  border: 1px solid rgba(248, 113, 113, 0.35);
+  border-radius: 12px;
+  color: #fecaca;
+  font-size: 0.9rem;
+  padding: 0.75rem 1rem;
+  text-align: center;
+}
+
+.login__submit {
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.95), rgba(14, 165, 233, 0.95));
+  border: none;
+  border-radius: 999px;
+  color: #0f172a;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 700;
+  padding: 0.85rem 1rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.login__submit:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.login__submit:not(:disabled):hover,
+.login__submit:not(:disabled):focus-visible {
+  box-shadow: 0 12px 24px rgba(56, 189, 248, 0.35);
+  transform: translateY(-2px);
+  outline: none;
+}
+
+@media (max-width: 640px) {
+  .login__card {
+    padding: 2rem;
+  }
+}

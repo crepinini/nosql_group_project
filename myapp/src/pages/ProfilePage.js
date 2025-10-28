@@ -1,57 +1,89 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from 'react';
+import { Navigate } from 'react-router-dom';
+import { buildUsersUrl } from '../config';
+import { getStoredUser, storeUser } from '../components/Login/auth';
 
-export default function ProfilePage() {
-  const [profile, setProfile] = useState(null);
+const ProfilePage = () => {
+  const authUser = getStoredUser();
+  const [profile, setProfile] = useState(() => authUser);
   const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(!authUser);
 
   useEffect(() => {
-    const fetchProfile = async () => {
+    if (!authUser) {
+      setIsLoading(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    const loadProfile = async () => {
       try {
-        const response = await fetch("/myprofile?user_id=u000000000001");
-        if (!response.ok) throw new Error("Failed to fetch profile");
+        setIsLoading(true);
+        const userId = authUser._id || authUser.username;
+        const response = await fetch(
+          buildUsersUrl(`/myprofile?user_id=${encodeURIComponent(userId)}`),
+          { signal: controller.signal },
+        );
+        if (!response.ok) {
+          throw new Error('Failed to fetch profile');
+        }
         const data = await response.json();
         setProfile(data);
+        storeUser({ ...authUser, ...data });
+        setError(null);
       } catch (err) {
-        console.error("Error fetching profile:", err);
-        setError(err.message);
+        if (err.name !== 'AbortError') {
+          setError(err.message || 'Unexpected error');
+        }
+      } finally {
+        setIsLoading(false);
       }
     };
-    fetchProfile();
-  }, []);
 
-  if (error)
+    loadProfile();
+
+    return () => controller.abort();
+  }, [authUser]);
+
+  if (!authUser) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (error) {
     return (
-      <div style={{ color: "red", textAlign: "center" }}>
+      <div style={{ color: 'red', textAlign: 'center', padding: '2rem' }}>
         Error: {error}
       </div>
     );
+  }
 
-  if (!profile)
+  if (isLoading || !profile) {
     return (
-      <div style={{ color: "white", textAlign: "center" }}>
+      <div style={{ color: '#fff', textAlign: 'center', padding: '2rem' }}>
         Loading profile...
       </div>
     );
+  }
 
   return (
-    <div style={{ color: "white", padding: "2rem", maxWidth: "800px", margin: "auto" }}>
+    <div style={{ color: '#fff', padding: '2rem', maxWidth: '800px', margin: '0 auto' }}>
       <h1>{profile.full_name}</h1>
       <p>@{profile.username}</p>
       <p>{profile.about_me}</p>
-      <p>📅 {profile.birthdate}</p>
+      <p>🎂 {profile.birthdate}</p>
       <p>📍 {profile.location_city}, {profile.location_country}</p>
 
       <h3>Favorites</h3>
       <ul>
         {profile.favorites?.map((fav, index) => (
-          <li key={index}>{fav._id}</li>
+          <li key={fav._id || index}>{fav._id || 'Unknown title'}</li>
         ))}
       </ul>
 
       <h3>Reviews</h3>
       <ul>
         {profile.reviews?.map((review, index) => (
-          <li key={index}>
+          <li key={review._id || index}>
             <p>{review.review_text}</p>
             <small>{review.date_posted}</small>
           </li>
@@ -59,4 +91,6 @@ export default function ProfilePage() {
       </ul>
     </div>
   );
-}
+};
+
+export default ProfilePage;

@@ -4,6 +4,7 @@
   color: #fff;
   display: flex;
   justify-content: space-between;
+  gap: 2rem;
   padding: 1rem 2.5rem;
   position: sticky;
   top: 0;
@@ -52,4 +53,67 @@
 .navbar__links a:focus-visible::after,
 .navbar__links a:hover::after {
   transform: scaleX(1);
+}
+
+.navbar__actions {
+  align-items: center;
+  display: flex;
+  gap: 1rem;
+}
+
+.navbar__welcome {
+  color: rgba(226, 232, 240, 0.8);
+  font-size: 0.95rem;
+}
+
+.navbar__login {
+  background: rgba(56, 189, 248, 0.18);
+  border: 1px solid rgba(56, 189, 248, 0.45);
+  border-radius: 999px;
+  color: #38bdf8;
+  padding: 0.55rem 1.2rem;
+  text-decoration: none;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.navbar__login:hover,
+.navbar__login:focus-visible {
+  background: rgba(56, 189, 248, 0.3);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+.navbar__logout {
+  background: transparent;
+  border: 1px solid rgba(248, 113, 113, 0.45);
+  border-radius: 999px;
+  color: #fecaca;
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 0.45rem 1.1rem;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.navbar__logout:hover,
+.navbar__logout:focus-visible {
+  background: rgba(248, 113, 113, 0.18);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+@media (max-width: 768px) {
+  .navbar {
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .navbar__links {
+    flex-basis: 100%;
+    justify-content: center;
+  }
+
+  .navbar__actions {
+    flex-basis: 100%;
+    justify-content: center;
+  }
 }

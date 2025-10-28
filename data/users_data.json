@@ -1,66 +1,244 @@
 {
-    "_id": "u000000000001",
-    "username": "cinefan_92",
-    "full_name": "Alex Dupont",
-    "member_since": "2017-08-15",
-    "birthdate": "2001-08-15",
-    "location_city": "Brussels",
-    "location_country": "Belgium",
-    "about_me": "Passionate about cinema history, especially war dramas, European arthouse, and 90s thrillers. Favorite directors: Christopher Nolan, Denis Villeneuve, Wong Kar-Wai. I curate movie lists based on emotion, storytelling, and visual impact.",
-    "favorites": [
-        {
-            "_id": "ms000000000001"
-        },
-        {
-            "_id": "ms000000000002"
-        }
-    ],
-    "reviews": [
-        {
-            "_id": "ms000000000001",
-            "review_text": "A brutal, honest, and emotionally devastating portrayal of war. Spielberg at his most human.",
-            "helpful_votes": 1204,
-            "date_posted": "2025-10-18"
-        },
-        {
-            "_id": "ms000000000002",
-            "review_text": "A brutal, honest, and emotionally devastating portrayal of war. Spielberg at his most human.",
-            "helpful_votes": 1204,
-            "date_posted": "2025-10-18"
-        }
-    ],
-    "friends": [
+    "users": [
         {
             "_id": "u000000000001",
-            "common_favorites": [
-                "Parasite",
-                "Blade Runner 2049"
-            ]
+            "username": "mehdi_e",
+            "password": "mehdi123",
+            "full_name": "Mehdi El Maadoudi",
+            "member_since": "2019-05-12",
+            "birthdate": "1998-02-21",
+            "location_city": "Brussels",
+            "location_country": "Belgium",
+            "about_me": "Cloud engineer by day, cinephile by night. I collect behind-the-scenes trivia and love deconstructing sci-fi epics.",
+            "favorites_movies": [
+                {
+                    "_id": "ms000000000003"
+                },
+                {
+                    "_id": "ms000000000007"
+                },
+                {
+                    "_id": "ms000000000009"
+                }
+            ],
+            "favorites_crews": [
+                {
+                    "_id": "p000000000002"
+                },
+                {
+                    "_id": "p000000000004"
+                },
+                {
+                    "_id": "p000000000011"
+                }
+            ],
+            "reviews": [
+                {
+                    "_id": "ms000000000007",
+                    "review_text": "An ambitious exploration of love, time, and survival. Zimmer's score still gives me chills.",
+                    "helpful_votes": 342,
+                    "date_posted": "2024-11-02"
+                },
+                {
+                    "_id": "ms000000000003",
+                    "review_text": "Hope, resilience, and friendship wrapped in perfect storytelling. Timeless.",
+                    "helpful_votes": 489,
+                    "date_posted": "2023-07-18"
+                }
+            ],
+            "friends": [
+                {
+                    "_id": "u000000000002",
+                    "common_favorites": [
+                        "ms000000000005",
+                        "ms000000000007"
+                    ]
+                },
+                {
+                    "_id": "u000000000003",
+                    "common_favorites": [
+                        "ms000000000003",
+                        "ms000000000004"
+                    ]
+                }
+            ],
+            "list": [
+                {
+                    "movies_series": [
+                        {
+                            "_id": "ms000000000010"
+                        },
+                        {
+                            "_id": "ms000000000012"
+                        }
+                    ]
+                }
+            ],
+            "stats": {
+                "total_favorites": 3,
+                "total_reviews": 2,
+                "friends_count": 2
+            }
         },
         {
             "_id": "u000000000002",
-            "common_favorites": [
-                "Parasite",
-                "Blade Runner 2049"
-            ]
-        }
-    ],
-    "list": [
-        {
-            "movies_series" : [
+            "username": "salwa_h",
+            "password": "salwa123",
+            "full_name": "Salwa Hammou",
+            "member_since": "2020-01-05",
+            "birthdate": "1997-09-11",
+            "location_city": "Wavre",
+            "location_country": "Belgium",
+            "about_me": "Full-stack developer who never misses a film festival. Documentaries and grounded dramas are my comfort zone.",
+            "favorites_movies": [
                 {
-                    "_id": "u000000000002"
-            },
-            {
-                "_id": "u000000000002"
-            
+                    "_id": "ms000000000002"
+                },
+                {
+                    "_id": "ms000000000004"
+                },
+                {
+                    "_id": "ms000000000011"
+                }
+            ],
+            "favorites_crews": [
+                {
+                    "_id": "p000000000002"
+                },
+                {
+                    "_id": "p000000000004"
+                },
+                {
+                    "_id": "p000000000011"
+                }
+            ],
+            "reviews": [
+                {
+                    "_id": "ms000000000004",
+                    "review_text": "A quiet character study that lingers long after the credits. Stellar performances all around.",
+                    "helpful_votes": 215,
+                    "date_posted": "2025-03-22"
+                },
+                {
+                    "_id": "ms000000000011",
+                    "review_text": "Animation with heart and soaring songs. The ocean-as-character concept is brilliant.",
+                    "helpful_votes": 178,
+                    "date_posted": "2024-08-09"
+                }
+            ],
+            "friends": [
+                {
+                    "_id": "u000000000001",
+                    "common_favorites": [
+                        "ms000000000005",
+                        "ms000000000007"
+                    ]
+                },
+                {
+                    "_id": "u000000000003",
+                    "common_favorites": [
+                        "ms000000000003",
+                        "ms000000000010"
+                    ]
+                }
+            ],
+            "list": [
+                {
+                    "movies_series": [
+                        {
+                            "_id": "ms000000000008"
+                        },
+                        {
+                            "_id": "ms000000000013"
+                        }
+                    ]
+                }
+            ],
+            "stats": {
+                "total_favorites": 3,
+                "total_reviews": 2,
+                "friends_count": 2
             }
-            ]
+        },
+        {
+            "_id": "u000000000003",
+            "username": "nirina_c",
+            "password": "nirina123",
+            "full_name": "Nirina Crepin",
+            "member_since": "2021-06-27",
+            "birthdate": "2001-10-29",
+            "location_city": "Bousval",
+            "location_country": "Belgium",
+            "about_me": "Product designer turning user stories into journeys. I adore vibrant animation and clever twists.",
+            "favorites_movies": [
+                {
+                    "_id": "ms000000000001"
+                },
+                {
+                    "_id": "ms000000000005"
+                },
+                {
+                    "_id": "ms000000000011"
+                }
+            ],
+            "favorites_crews": [
+                {
+                    "_id": "p000000000002"
+                },
+                {
+                    "_id": "p000000000004"
+                },
+                {
+                    "_id": "p000000000011"
+                }
+            ],
+            "reviews": [
+                {
+                    "_id": "ms000000000001",
+                    "review_text": "Childhood magic that still feels epic. The circle of life hits every time.",
+                    "helpful_votes": 301,
+                    "date_posted": "2024-12-01"
+                },
+                {
+                    "_id": "ms000000000005",
+                    "review_text": "Pixar at its most inventive—joy, sadness, and catharsis in one breath.",
+                    "helpful_votes": 264,
+                    "date_posted": "2023-05-30"
+                }
+            ],
+            "friends": [
+                {
+                    "_id": "u000000000001",
+                    "common_favorites": [
+                        "ms000000000003",
+                        "ms000000000004"
+                    ]
+                },
+                {
+                    "_id": "u000000000002",
+                    "common_favorites": [
+                        "ms000000000003",
+                        "ms000000000010"
+                    ]
+                }
+            ],
+            "list": [
+                {
+                    "movies_series": [
+                        {
+                            "_id": "ms000000000006"
+                        },
+                        {
+                            "_id": "ms000000000009"
+                        }
+                    ]
+                }
+            ],
+            "stats": {
+                "total_favorites": 3,
+                "total_reviews": 2,
+                "friends_count": 2
+            }
         }
-    ],
-    "stats": {
-        "total_favorites": 6,
-        "total_reviews": 65,
-        "friends_count": 3
-    }
+    ]
 }
