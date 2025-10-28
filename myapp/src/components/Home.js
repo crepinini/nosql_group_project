@@ -5,6 +5,19 @@ import './Home.css';
 const FALLBACK_POSTER =
   'https://via.placeholder.com/400x600.png?text=Poster+Unavailable';
 
+const formatRuntime = (duration) => {
+  if (!duration || Number.isNaN(Number(duration))) {
+    return null;
+  }
+  const totalMinutes = Number(duration);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (hours === 0) {
+    return `${minutes}m`;
+  }
+  return `${hours}h ${minutes.toString().padStart(2, '0')}m`;
+};
+
 export default function Home() {
   const [movies, setMovies] = useState([]);
   const [error, setError] = useState(null);
@@ -68,34 +81,40 @@ export default function Home() {
             </div>
 
             <div className="home-rail-movies">
-              {filteredMovies.map((movie) => (
-                <div
-                  key={movie._id}
-                  className="movie-card"
-                  onClick={() => navigate(`/movies-series/${movie._id}`)}
-                  style={{ cursor: 'pointer' }}
-                >
-                  <img
-                    src={movie.poster_url || FALLBACK_POSTER}
-                    alt={movie.title}
-                    loading="lazy"
-                  />
-                  <h3>{movie.title}</h3>
-                  <p className="movie-meta">
-                    {movie.year ? movie.year : 'N/A'} • {movie.imdb_type || 'Unknown'}
-                  </p>
-                  {movie.rating && (
-                    <p className="movie-rating">⭐ {Number(movie.rating).toFixed(1)}</p>
-                  )}
-                  <div className="movie-genres">
-                    {movie.genres?.slice(0, 3).map((g) => (
-                      <span key={g} className="movie-genre-badge">
-                        {g}
-                      </span>
-                    ))}
+              {filteredMovies.map((movie) => {
+                const runtimeLabel = formatRuntime(movie.duration);
+                return (
+                  <div
+                    key={movie._id}
+                    className="movie-card"
+                    onClick={() => navigate(`/movies-series/${movie._id}`)}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <img
+                      src={movie.poster_url || FALLBACK_POSTER}
+                      alt={movie.title}
+                      loading="lazy"
+                    />
+                    <h3>{movie.title}</h3>
+                    <p className="movie-meta">
+                      {movie.year ? movie.year : 'N/A'} • {movie.imdb_type || 'Unknown'}
+                    </p>
+                    {runtimeLabel && (
+                      <p className="movie-duration">{runtimeLabel}</p>
+                    )}
+                    {movie.rating && (
+                      <p className="movie-rating">⭐ {Number(movie.rating).toFixed(1)}</p>
+                    )}
+                    <div className="movie-genres">
+                      {movie.genres?.slice(0, 3).map((g) => (
+                        <span key={g} className="movie-genre-badge">
+                          {g}
+                        </span>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </>
         )}
@@ -103,4 +122,3 @@ export default function Home() {
     </div>
   );
 }
-
