@@ -158,14 +158,6 @@ const MovieDetail = ({ movie }) => {
 
         <p className="movie-detail__description">{description}</p>
 
-        <div className="movie-detail__genres" id="movies">
-          {genres?.map((genre) => (
-            <span key={genre} className="movie-detail__badge">
-              {genre}
-            </span>
-          ))}
-        </div>
-
         {highlightItems.length ? (
           <div className="movie-detail__highlights" role="list">
             {highlightItems.map((item, index) => (
@@ -179,6 +171,14 @@ const MovieDetail = ({ movie }) => {
             ))}
           </div>
         ) : null}
+
+        <div className="movie-detail__genres" id="movies">
+          {genres?.map((genre) => (
+            <span key={genre} className="movie-detail__badge">
+              {genre}
+            </span>
+          ))}
+        </div>
       </div>
     </section>
   );
