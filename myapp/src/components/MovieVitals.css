@@ -38,13 +38,21 @@
   flex-wrap: nowrap;
   overflow-x: auto;
   padding-bottom: 0.4rem;
+  cursor: none;
+  scrollbar-width: none;
+}
+
+.movie-vitals__chips--inline::-webkit-scrollbar,
+.movie-vitals__chips--inline::-webkit-scrollbar-thumb,
+.movie-vitals__chips--inline::-webkit-scrollbar-track {
+  display: none;
 }
 
 .movie-vitals__chip {
   background: rgba(255, 255, 255, 0.12);
   border-radius: 999px;
   color: #f8fafc;
-  cursor: default;
+  cursor: none;
   font-size: 0.85rem;
   letter-spacing: 0.04em;
   white-space: nowrap;
@@ -57,7 +65,6 @@
 .movie-vitals__chip:focus-visible {
   background: rgba(255, 255, 255, 0.18);
   transform: translateY(-2px);
-  cursor: pointer;
   outline: none;
 }
 
@@ -69,6 +76,11 @@
 .movie-vitals__chip--inline:focus-visible {
   cursor: none;
   transform: translateY(-1px);
+}
+
+.movie-vitals__chip:not(.movie-vitals__chip--inline):hover,
+.movie-vitals__chip:not(.movie-vitals__chip--inline):focus-visible {
+  cursor: pointer;
 }
 
 @media (max-width: 768px) {
