@@ -129,6 +129,24 @@ def authenticate_user():
     serialized = serialize_document(user)
     return jsonify(serialized)
 
+@app.route("/auth/login/<user_id>", methods=["PUT"])
+def update_authenticate_user(user_id):
+    payload = request.get_json(silent=True) or {}
+    new_username = payload.get("username")
+    new_password = payload.get("password")
+    if not new_username and not new_password:
+        return jsonify({"error": "Username and password are required"}), 400
+    user = find_user(user_id)
+    if not user:
+        return jsonify({"error":"User not found"}), 404
+    updates = {}
+    if new_username:
+        updates["username"] = new_username
+    if new_password:
+        updates["password"]=new_password
+    result = users_collection.update_one({"_id": ObjectId(user["_id"])}, {"$set": updates}) # update in MongoDb
+    return jsonify({"message": "Your data has been successfully updated!"})
+
 @app.route("/myfriends", methods=["GET"])
 def get_my_friends():
     cache_key = "my_friends_list"
