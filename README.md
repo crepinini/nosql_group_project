@@ -18,7 +18,11 @@ Movies Series App
 - https://stackoverflow.com/questions/51350198/which-ports-do-i-use-to-send-get-requests-for-a-full-stack-vue-flask-mongodb-pro
 - https://medium.com/analytics-vidhya/creating-dockerized-flask-mongodb-application-20ccde391a
 - https://ishmeet1995.medium.com/how-to-create-restful-crud-api-with-python-flask-mongodb-and-docker-8f6ccb73c5bc
-
+- https://www.geeksforgeeks.org/reactjs/how-to-do-crud-operations-in-reactjs/
+- https://medium.com/@bhairabpatra.iitd/crud-create-read-update-delete-application-in-react-566bf229aaee
+- https://uibakery.io/crud-operations/react
+- https://github.com/moosakazim12/React-Crud
+- https://www.geeksforgeeks.org/mern/how-to-build-a-basic-crud-app-with-node-js-and-reactjs/
 - https://www.freecodecamp.org/news/how-to-build-a-fullstack-authentication-system-with-react-express-mongodb-heroku-and-netlify/
 - https://kouohhashi.medium.com/simple-authentication-with-react-and-mongodb-dd2828cc4f16
 - https://www.youtube.com/watch?v=3-Qqn01Z2aU
@@ -28,3 +32,10 @@ Movies Series App
 - https://github.com/parthasarathy27/Reactpage-login
 - https://tutorialrays.in/building-a-complete-authentication-system-with-react-redux-node-js-and-mongodb/
 - https://www.youtube.com/watch?v=S9eCBX-Re8A
+- https://stackoverflow.com/questions/51006397/cant-remove-margins-on-react-web-app
+- https://forum.freecodecamp.org/t/how-to-use-margin-with-react/501642
+- https://www.reddit.com/r/react/comments/10tyok2/just_started_using_react_padding_and_margins_dont/
+- https://gist.github.com/SebastianUdden/b07cd20874ab14648c3e98e708241276
+- https://developer.mozilla.org/en-US/docs/Web/CSS/clamp
+- https://www.designsystemscollective.com/fluid-typographic-scales-revolutionize-your-responsive-design-0d10ed7f740e
+
