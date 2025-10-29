@@ -17,7 +17,25 @@ const formatRuntime = (duration) => {
   return `${hours}h ${minutes.toString().padStart(2, '0')}m`;
 };
 
-const MovieDetail = ({ movie }) => {
+const STATUS_OPTIONS = [
+  { value: 'watching', label: 'Watching' },
+  { value: 'watched', label: 'Watched' },
+  { value: 'plan', label: 'To watch' },
+  { value: 'none', label: 'No status' },
+];
+
+const MovieDetail = ({
+  movie,
+  isFavorite = false,
+  onToggleFavorite,
+  favoritePending = false,
+  favoriteError = null,
+  watchStatus = 'none',
+  onWatchStatusChange,
+  statusPending = false,
+  statusError = null,
+  canModify = false,
+}) => {
   if (!movie) {
     return (
       <section className="movie-detail movie-detail--empty" aria-live="polite">
@@ -114,6 +132,13 @@ const MovieDetail = ({ movie }) => {
     }
   }
 
+  const handleFavoriteClick = () => {
+    if (!onToggleFavorite || !canModify || favoritePending) {
+      return;
+    }
+    onToggleFavorite();
+  };
+
   return (
     <section
       className="movie-detail"
@@ -143,6 +168,60 @@ const MovieDetail = ({ movie }) => {
             <span className="movie-detail__score" aria-label="IMDB rating">
               Rating {Number(rating).toFixed(1)}
             </span>
+          ) : null}
+          <div className="movie-detail__meta-actions">
+            <button
+              type="button"
+              className={`movie-detail__favorite ${
+                isFavorite ? 'movie-detail__favorite--active' : ''
+              }`}
+              onClick={handleFavoriteClick}
+              disabled={!canModify || favoritePending || !onToggleFavorite}
+              aria-pressed={isFavorite}
+            >
+              <span className="movie-detail__favorite-icon" aria-hidden="true">
+                {isFavorite ? '★' : '☆'}
+              </span>
+              <span className="movie-detail__favorite-label">
+                {favoritePending
+                  ? 'Saving...'
+                  : isFavorite
+                  ? 'Favorited'
+                  : 'Add to favorites'}
+              </span>
+            </button>
+
+            <label className="movie-detail__status-select">
+              <span className="sr-only movie-detail__status-label">Watch status</span>
+              <select
+                value={watchStatus}
+                onChange={(event) =>
+                  onWatchStatusChange && onWatchStatusChange(event.target.value)
+                }
+                disabled={!canModify || statusPending || !onWatchStatusChange}
+              >
+                {STATUS_OPTIONS.map(({ value, label }) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          {(!canModify || favoriteError || statusError) ? (
+            <div className="movie-detail__meta-notes">
+              {!canModify ? (
+                <span className="movie-detail__action-hint">
+                  Sign in to keep favorites and statuses in sync.
+                </span>
+              ) : null}
+              {favoriteError ? (
+                <span className="movie-detail__action-error">{favoriteError}</span>
+              ) : null}
+              {!favoriteError && statusError ? (
+                <span className="movie-detail__action-error">{statusError}</span>
+              ) : null}
+            </div>
           ) : null}
         </div>
 
@@ -185,3 +264,8 @@ const MovieDetail = ({ movie }) => {
 };
 
 export default MovieDetail;
+
+
+
+
+

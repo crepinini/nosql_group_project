@@ -78,7 +78,8 @@
                 "total_favorites": 3,
                 "total_reviews": 2,
                 "friends_count": 2
-            }
+            },
+            "watch_statuses": {}
         },
         {
             "_id": "u000000000002",
@@ -158,7 +159,8 @@
                 "total_favorites": 3,
                 "total_reviews": 2,
                 "friends_count": 2
-            }
+            },
+            "watch_statuses": {}
         },
         {
             "_id": "u000000000003",
@@ -238,7 +240,8 @@
                 "total_favorites": 3,
                 "total_reviews": 2,
                 "friends_count": 2
-            }
+            },
+            "watch_statuses": {}
         }
     ]
 }

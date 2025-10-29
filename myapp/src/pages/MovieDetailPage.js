@@ -6,7 +6,11 @@ import MovieTrailer from '../components/MovieTrailer';
 import MovieRail from '../components/MovieRail';
 import MovieVitals from '../components/MovieVitals';
 import { buildMoviesUrl, buildUsersUrl } from '../config';
-import { getStoredUser } from '../components/Login/auth';
+import {
+  getStoredUser,
+  storeUser,
+  subscribeToAuthChanges,
+} from '../components/Login/auth';
 
 const curatedSelection = (movies) => {
   const filtered = movies.filter(
@@ -35,6 +39,39 @@ const MovieDetailPage = () => {
     error: null,
   });
   const [hasFriendNetwork, setHasFriendNetwork] = useState(false);
+  const [authUser, setAuthUser] = useState(() => getStoredUser());
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [favoritePending, setFavoritePending] = useState(false);
+  const [favoriteError, setFavoriteError] = useState(null);
+  const [watchStatus, setWatchStatus] = useState('none');
+  const [statusPending, setStatusPending] = useState(false);
+  const [statusError, setStatusError] = useState(null);
+
+  useEffect(() => {
+    const handleAuthChange = () => {
+      setAuthUser(getStoredUser());
+    };
+    const unsubscribe = subscribeToAuthChanges(handleAuthChange);
+    window.addEventListener('storage', handleAuthChange);
+
+    return () => {
+      unsubscribe();
+      window.removeEventListener('storage', handleAuthChange);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleAuthChange = () => {
+      setAuthUser(getStoredUser());
+    };
+    const unsubscribe = subscribeToAuthChanges(handleAuthChange);
+    window.addEventListener('storage', handleAuthChange);
+
+    return () => {
+      unsubscribe();
+      window.removeEventListener('storage', handleAuthChange);
+    };
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -92,6 +129,124 @@ const MovieDetailPage = () => {
 
   const heroMovieId = heroMovie?._id;
   const heroMovieImdbId = heroMovie?.imdb_id;
+  const userId = authUser?._id || authUser?.username || null;
+
+  useEffect(() => {
+    if (!heroMovieId) {
+      setIsFavorite(false);
+      setWatchStatus('none');
+      return;
+    }
+
+    const favoritesList = Array.isArray(authUser?.favorites_movies)
+      ? authUser.favorites_movies
+      : [];
+    const membership = favoritesList.some((entry) => entry?._id === heroMovieId);
+    setIsFavorite(membership);
+
+    const statusMap = authUser?.watch_statuses || {};
+    const normalizedStatus = statusMap?.[heroMovieId] || 'none';
+    setWatchStatus(normalizedStatus);
+  }, [authUser, heroMovieId]);
+
+  useEffect(() => {
+    setFavoriteError(null);
+    setStatusError(null);
+  }, [heroMovieId]);
+
+  const handleToggleFavorite = async () => {
+    if (!userId || !heroMovieId) {
+      setFavoriteError('Sign in to manage favorites.');
+      return;
+    }
+
+    setFavoritePending(true);
+    setFavoriteError(null);
+
+    try {
+      const response = await fetch(
+        buildUsersUrl(`/users/${userId}/favorites`),
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            movie_id: heroMovieId,
+            action: isFavorite ? 'remove' : 'add',
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const updatedFavorites = await response.json();
+      const membership = Array.isArray(updatedFavorites)
+        ? updatedFavorites.some((entry) => entry?._id === heroMovieId)
+        : false;
+      setIsFavorite(membership);
+
+      const nextUser = {
+        ...authUser,
+        favorites_movies: updatedFavorites,
+      };
+      setAuthUser(nextUser);
+      storeUser(nextUser);
+    } catch (err) {
+      console.error('Failed to toggle favorite', err);
+      setFavoriteError('Unable to update favorites right now.');
+    } finally {
+      setFavoritePending(false);
+    }
+  };
+
+  const handleUpdateStatus = async (nextStatus) => {
+    if (!userId || !heroMovieId) {
+      setStatusError('Sign in to update your watch status.');
+      return;
+    }
+
+    if (nextStatus === watchStatus) {
+      return;
+    }
+
+    setStatusPending(true);
+    setStatusError(null);
+
+    try {
+      const response = await fetch(
+        buildUsersUrl(`/users/${userId}/watch-status`),
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            movie_id: heroMovieId,
+            status: nextStatus === 'none' ? null : nextStatus,
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const updatedStatuses = await response.json();
+      const normalizedStatus = updatedStatuses?.[heroMovieId] || 'none';
+      setWatchStatus(normalizedStatus);
+
+      const nextUser = {
+        ...authUser,
+        watch_statuses: updatedStatuses,
+      };
+      setAuthUser(nextUser);
+      storeUser(nextUser);
+    } catch (err) {
+      console.error('Failed to update watch status', err);
+      setStatusError('Unable to update watch status right now.');
+    } finally {
+      setStatusPending(false);
+    }
+  };
 
   useEffect(() => {
     const movieIdentifier = heroMovieId;
@@ -105,7 +260,6 @@ const MovieDetailPage = () => {
       return;
     }
 
-    const authUser = getStoredUser();
     const friendRefs = Array.isArray(authUser?.friends)
       ? authUser.friends
       : [];
@@ -190,24 +344,24 @@ const MovieDetailPage = () => {
             }
             seenIds.add(entry.id);
             deduped.push(entry);
-      });
-
-      setFavoriteFriends(deduped);
-      setFriendsStatus({ loading: false, error: null });
-    } catch (err) {
-      if (!cancelled) {
-        if (err.name !== 'AbortError') {
-          console.error('Failed to load favorite friends', err);
-          setFriendsStatus({
-            loading: false,
-            error: 'Unable to load which friends favorited this title.',
           });
-        } else {
-          setFriendsStatus({ loading: false, error: null });
+
+        setFavoriteFriends(deduped);
+        setFriendsStatus({ loading: false, error: null });
+      } catch (err) {
+        if (!cancelled) {
+          if (err.name !== 'AbortError') {
+            console.error('Failed to load favorite friends', err);
+            setFriendsStatus({
+              loading: false,
+              error: 'Unable to load which friends favorited this title.',
+            });
+          } else {
+            setFriendsStatus({ loading: false, error: null });
+          }
         }
       }
-    }
-  };
+    };
 
     loadFriends();
 
@@ -215,7 +369,7 @@ const MovieDetailPage = () => {
       cancelled = true;
       controller.abort();
     };
-  }, [heroMovieId, heroMovieImdbId]);
+  }, [heroMovieId, heroMovieImdbId, authUser]);
 
   const handleSelect = (movie) => {
     if (movie?._id && movie._id !== movieId) {
@@ -247,7 +401,18 @@ const MovieDetailPage = () => {
 
   return (
     <div className="movie-detail-page">
-      <MovieDetail movie={heroMovie} />
+      <MovieDetail
+        movie={heroMovie}
+        isFavorite={isFavorite}
+        onToggleFavorite={handleToggleFavorite}
+        favoritePending={favoritePending}
+        favoriteError={favoriteError}
+        watchStatus={watchStatus}
+        onWatchStatusChange={handleUpdateStatus}
+        statusPending={statusPending}
+        statusError={statusError}
+        canModify={Boolean(userId)}
+      />
       <MovieVitals
         movie={heroMovie}
         favoriteFriends={favoriteFriends}
@@ -267,6 +432,3 @@ const MovieDetailPage = () => {
 };
 
 export default MovieDetailPage;
-
-
-

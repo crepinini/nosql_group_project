@@ -43,6 +43,20 @@ def build_cache_key(prefix, *parts):
     return ":".join(normalized)
 
 
+def invalidate_user_cache(user_id):
+    keys = [
+        build_cache_key("user_detail", user_id),
+        build_cache_key("profile", user_id),
+        build_cache_key("favorites", user_id, ""),
+        build_cache_key("favorites", user_id, "all"),
+    ]
+    for key in keys:
+        try:
+            r.delete(key)
+        except redis.RedisError:
+            continue
+
+
 def find_user(identifier, projection=None):
     if not identifier:
         return None
@@ -234,6 +248,97 @@ def get_my_list():
 
     r.setex(cache_key, CACHE_TTL_SECONDS, json.dumps(favorites))
     return jsonify(favorites)
+
+@app.route("/users/<user_id>/favorites", methods=["POST"])
+def update_user_favorites(user_id):
+    payload = request.get_json(silent=True) or {}
+    movie_id = (payload.get("movie_id") or "").strip()
+    action = (payload.get("action") or "toggle").strip().lower()
+
+    if not movie_id:
+        return jsonify({"error": "movie_id is required"}), 400
+
+    valid_actions = {"add", "remove", "toggle"}
+    if action not in valid_actions:
+        return jsonify({"error": "Unsupported action"}), 400
+
+    user = find_user(user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    favorites = [
+        entry for entry in (user.get("favorites_movies") or []) if isinstance(entry, dict)
+    ]
+    exists = any(entry.get("_id") == movie_id for entry in favorites)
+
+    if action == "add" or (action == "toggle" and not exists):
+        if not exists:
+            favorites.append({"_id": movie_id})
+    elif action == "remove" or (action == "toggle" and exists):
+        favorites = [entry for entry in favorites if entry.get("_id") != movie_id]
+
+    users_collection.update_one({"_id": user["_id"]}, {"$set": {"favorites_movies": favorites}})
+
+    invalidate_user_cache(user_id)
+    return jsonify(favorites)
+
+
+@app.route("/users/<user_id>/watch-status", methods=["POST"])
+def update_watch_status(user_id):
+    payload = request.get_json(silent=True) or {}
+    movie_id = (payload.get("movie_id") or "").strip()
+    raw_status = payload.get("status")
+
+    if not movie_id:
+        return jsonify({"error": "movie_id is required"}), 400
+
+    normalized_input = ""
+    if raw_status is None:
+        normalized_input = "none"
+    elif isinstance(raw_status, str):
+        normalized_input = raw_status.strip().lower()
+
+    status_map = {
+        "watching": "watching",
+        "watch": "watching",
+        "watched": "watched",
+        "completed": "watched",
+        "finished": "watched",
+        "plan": "plan",
+        "planned": "plan",
+        "plan_to_watch": "plan",
+        "want": "plan",
+        "wishlist": "plan",
+        "none": "none",
+        "": "none",
+    }
+
+    if normalized_input not in status_map:
+        return jsonify({"error": "Invalid status value"}), 400
+
+    normalized_status = status_map[normalized_input]
+
+    user = find_user(user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    watch_statuses = dict(user.get("watch_statuses") or {})
+    if normalized_status == "none":
+        watch_statuses.pop(movie_id, None)
+    else:
+        watch_statuses[movie_id] = normalized_status
+
+    if watch_statuses:
+        users_collection.update_one(
+            {"_id": user["_id"]}, {"$set": {"watch_statuses": watch_statuses}}
+        )
+    else:
+        users_collection.update_one(
+            {"_id": user["_id"]}, {"$unset": {"watch_statuses": ""}}
+        )
+
+    invalidate_user_cache(user_id)
+    return jsonify(watch_statuses)
 
 
 if __name__ == "__main__":
