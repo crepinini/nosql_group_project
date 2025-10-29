@@ -10,9 +10,11 @@
   display: flex;
   flex-direction: column;
   gap: 2.5rem;
-  margin: 0 auto;
-  max-width: 1180px;
-  padding: 3rem 2rem 4rem;
+  margin: 0;
+  max-width: none;
+  padding: 3rem clamp(1.5rem, 4vw, 4rem) 4rem;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .status {
@@ -68,12 +70,14 @@
   display: flex;
   flex-direction: column;
   gap: 2rem;
+  padding: 3rem clamp(15rem, 4vw, 4rem) 4rem;
 }
 
 .movie-detail-page {
   display: flex;
   flex-direction: column;
   gap: 2rem;
+  padding: 3rem clamp(15rem, 4vw, 4rem) 4rem;
 }
 
 .actor-detail-page__actions {

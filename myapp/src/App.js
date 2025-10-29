@@ -2,7 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-ro
 import Navbar from './components/Navbar';
 import MoviesPage from './pages/MoviesPage';
 import SeriesPage from './pages/SeriesPage';
-import ActorsPage from './pages/ActorsPage';
+import CrewPage from './pages/CrewPage';
 import ProfilePage from './pages/ProfilePage';
 import ActorDetailPage from './pages/ActorDetailPage';
 import MovieDetailPage from './pages/MovieDetailPage';
@@ -31,7 +31,8 @@ function App() {
             <Route path="/home" element={<Home />} />
             <Route path="/movies" element={<MoviesPage />} />
             <Route path="/series" element={<SeriesPage />} />
-            <Route path="/actors" element={<ActorsPage />} />
+            <Route path="/crew" element={<CrewPage />} />
+            <Route path="/actors" element={<CrewPage />} />
             <Route path="/actors/:actorId" element={<ActorDetailPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/movies-series/:movieId" element={<MovieDetailPage />} />
