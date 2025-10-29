@@ -1,53 +1,45 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import {
-  getStoredUser,
-  storeUser,
-  subscribeToAuthChanges,
-} from './Login/auth';
+import { getStoredUser } from './Login/auth';
 import './Profile.css';
 
 const FALLBACK_POSTER =
   'https://via.placeholder.com/400x600.png?text=Poster+Unavailable';
 
+// Accept both shapes: ["ms0001", ...] or [{ _id: "ms0001" }, ...]
 const normalizeFavorites = (profile) =>
-  profile?.favorites_movies || profile?.favorites || [];
+  (profile?.favorites_movies && Array.isArray(profile.favorites_movies)
+    ? profile.favorites_movies
+    : (profile?.favorites && Array.isArray(profile.favorites)
+      ? profile.favorites
+      : [])) || [];
 
+// Decide which user_id to load (URL has priority)
 const resolveUserId = (authUser) => {
   const urlParams = new URLSearchParams(window.location.search);
   const queryUserId = urlParams.get('user_id');
-  if (queryUserId) {
-    return queryUserId.trim();
-  }
+  if (queryUserId) return queryUserId.trim();
   return (authUser?._id || authUser?.username || '').trim();
 };
 
-const Profile = () => {
+export default function Profile() {
   const navigate = useNavigate();
-  const [authUser, setAuthUser] = useState(() => getStoredUser());
-  const [profile, setProfile] = useState(() => getStoredUser());
+
+  // Auth info comes from localStorage (no subscription here)
+  const [authUser] = useState(() => getStoredUser());
+
+  // Profile data loaded from backend
+  const [profile, setProfile] = useState(null);
+
+  // UI data
   const [favorites, setFavorites] = useState([]);
   const [reviewsEnriched, setReviewsEnriched] = useState([]);
+
+  // UX state
   const [isLoading, setIsLoading] = useState(!authUser);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const handleAuthChange = () => {
-      const nextUser = getStoredUser();
-      setAuthUser(nextUser);
-      setProfile(nextUser);
-      setError(null);
-    };
-
-    const unsubscribe = subscribeToAuthChanges(handleAuthChange);
-    window.addEventListener('storage', handleAuthChange);
-
-    return () => {
-      unsubscribe();
-      window.removeEventListener('storage', handleAuthChange);
-    };
-  }, []);
-
+  // Load profile from backend (runs when authUser changes once)
   useEffect(() => {
     if (!authUser) {
       setIsLoading(false);
@@ -62,196 +54,177 @@ const Profile = () => {
     }
 
     const controller = new AbortController();
-
-    const loadProfile = async () => {
+    (async () => {
       try {
-        const cachedFavorites = normalizeFavorites(authUser);
-        if (!cachedFavorites.length) {
-          setIsLoading(true);
-        }
+        setIsLoading(true);
         setError(null);
 
-        const response = await fetch(
-          `/myprofile?user_id=${encodeURIComponent(userId)}`,
-          { signal: controller.signal },
-        );
+        const res = await fetch(`/myprofile?user_id=${encodeURIComponent(userId)}`, {
+          signal: controller.signal,
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
-        }
-
-        const data = await response.json();
+        const data = await res.json();
         setProfile(data);
-        storeUser({ ...authUser, ...data });
-      } catch (err) {
-        if (err.name !== 'AbortError') {
-          console.error(err);
+        // IMPORTANT: do NOT call storeUser(...) here.
+      } catch (e) {
+        if (e.name !== 'AbortError') {
+          console.error(e);
           setError('Unable to load user profile');
         }
       } finally {
-        setIsLoading(false);
+        if (!controller.signal.aborted) setIsLoading(false);
       }
-    };
-
-    loadProfile();
+    })();
 
     return () => controller.abort();
   }, [authUser]);
 
+  // Fetch full movie docs for favorites (run once per user/profile id)
   useEffect(() => {
-    const favoriteEntries = normalizeFavorites(profile);
-    if (!favoriteEntries.length) {
+    if (!profile || !profile._id) return;
+
+    const favEntries = normalizeFavorites(profile);
+    if (!favEntries.length) {
       setFavorites([]);
       return;
     }
 
+    // Support string IDs or {_id} objects
     const ids = Array.from(
-      new Set(favoriteEntries.map((entry) => entry?._id).filter(Boolean)),
+      new Set(
+        favEntries
+          .map((entry) => (typeof entry === 'string' ? entry : entry?._id))
+          .filter(Boolean)
+      )
     );
 
-    let cancelled = false;
+    const controller = new AbortController();
     (async () => {
       try {
         const results = await Promise.all(
           ids.map(async (id) => {
             try {
-              const response = await fetch(`/movies-series/${id}`);
-              if (!response.ok) {
-                return null;
-              }
-              return await response.json();
+              const r = await fetch(`/api/movies-series/${id}`, {
+                signal: controller.signal,
+              });
+              if (!r.ok) return null;
+              return await r.json();
             } catch {
               return null;
             }
-          }),
+          })
         );
-
-        if (!cancelled) {
-          setFavorites(results.filter(Boolean));
-        }
-      } catch {
-        if (!cancelled) {
+        setFavorites(results.filter(Boolean));
+      } catch (e) {
+        if (e.name !== 'AbortError') {
+          console.error('favorites fetch error', e);
           setFavorites([]);
         }
       }
     })();
 
-    return () => {
-      cancelled = true;
-    };
-  }, [profile]);
+    return () => controller.abort();
+  }, [profile?._id]);
 
+  // Enrich reviews with movie titles (optional, once per user/profile id)
   useEffect(() => {
-    const reviewEntries = profile?.reviews || [];
+    if (!profile || !profile._id) return;
+
+    const reviewEntries = Array.isArray(profile.reviews) ? profile.reviews : [];
     if (!reviewEntries.length) {
       setReviewsEnriched([]);
       return;
     }
 
-    let cancelled = false;
+    const controller = new AbortController();
     (async () => {
       try {
         const results = await Promise.all(
           reviewEntries.map(async (review) => {
             const id = review._id || review.movie_id || review.imdb_id;
-            if (!id) {
-              return review;
-            }
+            if (!id) return review;
 
             try {
-              const response = await fetch(`/movies-series/${id}`);
-              if (!response.ok) {
-                return review;
-              }
-
-              const movie = await response.json();
+              const r = await fetch(`/api/movies-series/${id}`, {
+                signal: controller.signal,
+              });
+              if (!r.ok) return review;
+              const movie = await r.json();
               return {
                 ...review,
-                movie_title: movie.title || review.movie_title,
+                movie_title: movie.title || review.movie_title || 'Untitled Movie',
                 year: movie.year || review.year,
                 imdb_type: movie.imdb_type || review.imdb_type,
               };
             } catch {
               return review;
             }
-          }),
+          })
         );
-
-        if (!cancelled) {
-          setReviewsEnriched(results);
-        }
-      } catch {
-        if (!cancelled) {
+        setReviewsEnriched(results);
+      } catch (e) {
+        if (e.name !== 'AbortError') {
+          console.error('reviews enrich error', e);
           setReviewsEnriched(reviewEntries);
         }
       }
     })();
 
-    return () => {
-      cancelled = true;
-    };
-  }, [profile]);
+    return () => controller.abort();
+  }, [profile?._id]);
 
   const stats = useMemo(
     () => ({
-      friends: profile?.friends?.length || 0,
+      friends: Array.isArray(profile?.friends) ? profile.friends.length : 0,
       favorites: normalizeFavorites(profile).length,
-      reviews: profile?.reviews?.length || 0,
+      reviews: Array.isArray(profile?.reviews) ? profile.reviews.length : 0,
     }),
-    [profile],
+    [profile]
   );
 
-  if (!authUser) {
-    return <Navigate to="/login" replace />;
-  }
+  // Guards
+  if (!authUser) return <Navigate to="/login" replace />;
 
-  if (isLoading) {
+  if (isLoading)
     return (
       <div className="home-content">
         <p className="loading">Loading profile…</p>
       </div>
     );
-  }
 
-  if (error) {
+  if (error)
     return (
       <div className="home-content">
         <p className="error">{error}</p>
       </div>
     );
-  }
 
-  if (!profile) {
+  if (!profile)
     return (
       <div className="home-content">
         <p className="error">Profile not found</p>
       </div>
     );
-  }
 
   return (
     <div className="profile-page">
+      {/* Banner */}
       <section className="profile-hero">
         <h1>{profile.full_name || profile.username || 'Profile'}</h1>
-        {profile.username ? (
-          <div className="profile-handle">@{profile.username}</div>
-        ) : null}
-        {profile.about_me ? (
-          <p className="profile-about">{profile.about_me}</p>
-        ) : null}
+        {profile.username && <div className="profile-handle">@{profile.username}</div>}
+        {profile.about_me && <p className="profile-about">{profile.about_me}</p>}
         <div className="profile-meta">
-          {profile.birthdate ? <span>📅 {profile.birthdate}</span> : null}
-          {profile.location_city || profile.location_country ? (
+          {profile.birthdate && <span>📅 {profile.birthdate}</span>}
+          {(profile.location_city || profile.location_country) && (
             <span>
-              📍{' '}
-              {[profile.location_city, profile.location_country]
-                .filter(Boolean)
-                .join(', ')}
+              📍 {[profile.location_city, profile.location_country].filter(Boolean).join(', ')}
             </span>
-          ) : null}
+          )}
         </div>
       </section>
 
+      {/* Stats */}
       <section>
         <div className="profile-section-header">
           <h2 className="profile-section-title">Statistics</h2>
@@ -263,6 +236,7 @@ const Profile = () => {
         </div>
       </section>
 
+      {/* Favorites */}
       <section>
         <div className="profile-section-header">
           <h2 className="profile-section-title">Favorite Movies</h2>
@@ -272,9 +246,9 @@ const Profile = () => {
           <p className="profile-empty">No favorites yet</p>
         ) : (
           <div className="profile-rail">
-            {favorites.map((movie) => {
-              const id = movie._id || movie.imdb_id;
-              const title = movie.title || 'Untitled';
+            {favorites.map((m) => {
+              const id = m._id || m.imdb_id;
+              const title = m.title || 'Untitled';
               return (
                 <div
                   key={id || title}
@@ -283,20 +257,16 @@ const Profile = () => {
                   tabIndex={0}
                   title={title}
                   onClick={() => id && navigate(`/movies-series/${id}`)}
-                  onKeyDown={(event) => {
-                    if ((event.key === 'Enter' || event.key === ' ') && id) {
+                  onKeyDown={(e) => {
+                    if ((e.key === 'Enter' || e.key === ' ') && id) {
                       navigate(`/movies-series/${id}`);
                     }
                   }}
                 >
-                  <img
-                    src={movie.poster_url || FALLBACK_POSTER}
-                    alt={title}
-                    loading="lazy"
-                  />
+                  <img src={m.poster_url || FALLBACK_POSTER} alt={title} loading="lazy" />
                   <h3>{title}</h3>
                   <p className="movie-meta">
-                    {movie.year ? movie.year : 'N/A'} • {movie.imdb_type || 'Unknown'}
+                    {m.year ? m.year : 'N/A'} • {m.imdb_type || 'Unknown'}
                   </p>
                 </div>
               );
@@ -305,30 +275,27 @@ const Profile = () => {
         )}
       </section>
 
-      {reviewsEnriched.length > 0 ? (
+      {/* Reviews */}
+      {reviewsEnriched.length > 0 && (
         <section>
           <div className="profile-section-header">
             <h2 className="profile-section-title">Reviews</h2>
           </div>
           <div className="review-grid">
-            {reviewsEnriched.map((review, index) => (
-              <div key={review._id || index} className="review-card">
-                <div style={{ fontWeight: 600 }}>
-                  {review.movie_title || 'Untitled Movie'}
-                </div>
-                <p style={{ marginTop: '.5rem' }}>{review.review_text}</p>
-                {review.date_posted ? (
+            {reviewsEnriched.map((r, i) => (
+              <div key={r._id || i} className="review-card">
+                <div style={{ fontWeight: 600 }}>{r.movie_title || 'Untitled Movie'}</div>
+                <p style={{ marginTop: '.5rem' }}>{r.review_text}</p>
+                {r.date_posted && (
                   <div style={{ opacity: 0.85, marginTop: '.5rem' }}>
-                    <em>{review.date_posted}</em>
+                    <em>{r.date_posted}</em>
                   </div>
-                ) : null}
+                )}
               </div>
             ))}
           </div>
         </section>
-      ) : null}
+      )}
     </div>
   );
-};
-
-export default Profile;
+}
