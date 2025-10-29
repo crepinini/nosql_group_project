@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { getStoredUser } from './Login/auth';
 import './Profile.css';
 
@@ -14,16 +14,9 @@ const normalizeFavorites = (profile) =>
       ? profile.favorites
       : [])) || [];
 
-// Decide which user_id to load (URL has priority)
-const resolveUserId = (authUser) => {
-  const urlParams = new URLSearchParams(window.location.search);
-  const queryUserId = urlParams.get('user_id');
-  if (queryUserId) return queryUserId.trim();
-  return (authUser?._id || authUser?.username || '').trim();
-};
-
 export default function Profile() {
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Auth info comes from localStorage (no subscription here)
   const [authUser] = useState(() => getStoredUser());
@@ -35,19 +28,28 @@ export default function Profile() {
   const [favorites, setFavorites] = useState([]);
   const [reviewsEnriched, setReviewsEnriched] = useState([]);
 
+  // Friends data
+  const [friendsProfiles, setFriendsProfiles] = useState([]);
+
   // UX state
   const [isLoading, setIsLoading] = useState(!authUser);
   const [error, setError] = useState(null);
 
-  // Load profile from backend (runs when authUser changes once)
+  // Which user do we display? (query param has priority)
+  const viewedUserId = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    const q = (params.get('user_id') || '').trim();
+    if (q) return q;
+    return (authUser?._id || authUser?.username || '').trim();
+  }, [location.search, authUser]);
+
+  // Load profile when the viewed user changes (query param or logged user)
   useEffect(() => {
     if (!authUser) {
       setIsLoading(false);
       return;
     }
-
-    const userId = resolveUserId(authUser);
-    if (!userId) {
+    if (!viewedUserId) {
       setError('Profile not found');
       setIsLoading(false);
       return;
@@ -59,14 +61,13 @@ export default function Profile() {
         setIsLoading(true);
         setError(null);
 
-        const res = await fetch(`/myprofile?user_id=${encodeURIComponent(userId)}`, {
+        const res = await fetch(`/myprofile?user_id=${encodeURIComponent(viewedUserId)}`, {
           signal: controller.signal,
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
         const data = await res.json();
         setProfile(data);
-        // IMPORTANT: do NOT call storeUser(...) here.
       } catch (e) {
         if (e.name !== 'AbortError') {
           console.error(e);
@@ -78,7 +79,41 @@ export default function Profile() {
     })();
 
     return () => controller.abort();
-  }, [authUser]);
+  }, [authUser, viewedUserId]);
+
+  // Friends fetch (depends on the loaded profile)
+  useEffect(() => {
+    if (!profile?.friends?.length) {
+      setFriendsProfiles([]);
+      return;
+    }
+    const controller = new AbortController();
+    (async () => {
+      try {
+        const results = await Promise.all(
+          profile.friends.map(async (f) => {
+            const id = f._id || f.id;
+            if (!id) return null;
+            try {
+              const res = await fetch(`/users/${encodeURIComponent(id)}`, {
+                signal: controller.signal,
+              });
+              if (!res.ok) return null;
+              return await res.json();
+            } catch {
+              return null;
+            }
+          })
+        );
+        setFriendsProfiles(results.filter(Boolean));
+      } catch {
+        setFriendsProfiles([]);
+      }
+    })();
+    return () => controller.abort();
+  }, [profile?._id]);
+
+
 
   // Fetch full movie docs for favorites (run once per user/profile id)
   useEffect(() => {
@@ -182,6 +217,40 @@ export default function Profile() {
     }),
     [profile]
   );
+
+  useEffect(() => {
+    if (!profile || !Array.isArray(profile.friends) || profile.friends.length === 0) {
+      setFriendsProfiles([]);
+      return;
+    }
+
+    const controller = new AbortController();
+    (async () => {
+      try {
+        const results = await Promise.all(
+          profile.friends.map(async (f) => {
+            const id = f._id || f.id;
+            if (!id) return null;
+            try {
+              const res = await fetch(`/users/${encodeURIComponent(id)}`, {
+                signal: controller.signal,
+              });
+              if (!res.ok) return null;
+              return await res.json();
+            } catch {
+              return null;
+            }
+          })
+        );
+        setFriendsProfiles(results.filter(Boolean));
+      } catch {
+        setFriendsProfiles([]);
+      }
+    })();
+
+    return () => controller.abort();
+  }, [profile?._id]); // <- déclenche quand le profil (ou l'utilisateur) change
+
 
   // Guards
   if (!authUser) return <Navigate to="/login" replace />;
@@ -296,6 +365,56 @@ export default function Profile() {
           </div>
         </section>
       )}
+
+      {/* Friends */}
+      <section>
+        <div className="profile-section-header">
+          <h2 className="profile-section-title">Friends</h2>
+        </div>
+
+        {friendsProfiles.length === 0 ? (
+          <p className="profile-empty">No friends yet</p>
+        ) : (
+          <div className="friends-rail">
+            {friendsProfiles.map((friend) => {
+              const id = friend._id || friend.imdb_user_id;
+              const name = friend.full_name || friend.username || 'Unknown User';
+              const city = friend.location_city || '';
+              const country = friend.location_country || '';
+              const initials = name
+                .split(' ')
+                .map((n) => n[0])
+                .join('')
+                .slice(0, 2)
+                .toUpperCase();
+
+              return (
+                <div
+                  key={id}
+                  className="friend-card"
+                  role="button"
+                  tabIndex={0}
+                  title={name}
+                  onClick={() => id && navigate(`/profile?user_id=${id}`)}
+                  onKeyDown={(e) => {
+                    if ((e.key === 'Enter' || e.key === ' ') && id) {
+                      navigate(`/profile?user_id=${id}`);
+                    }
+                  }}
+                >
+                  <div className="friend-avatar">
+                    <span>{initials}</span>
+                  </div>
+                  <h3>{name}</h3>
+                  <p className="friend-meta">
+                    {[city, country].filter(Boolean).join(', ') || '—'}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
     </div>
   );
 }
