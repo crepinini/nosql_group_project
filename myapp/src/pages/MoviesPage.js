@@ -1,5 +1,7 @@
+import Home from '../components/Home';
+
 const MoviesPage = () => {
-  return <div className="status">Movies page</div>;
+  return <Home filterType="Movie" />;
 };
 
 export default MoviesPage;

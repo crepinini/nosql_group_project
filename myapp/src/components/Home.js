@@ -18,7 +18,7 @@ const formatRuntime = (duration) => {
   return `${hours}h ${minutes.toString().padStart(2, '0')}m`;
 };
 
-export default function Home() {
+export default function Home({ filterType }) {
   const [movies, setMovies] = useState([]);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -35,7 +35,13 @@ export default function Home() {
           throw new Error('Error loading movies');
         }
         const data = await response.json();
-        setMovies(data);
+        let filteredData;
+        if (filterType) {
+          filteredData = data.filter((m) => m.imdb_type === filterType);
+        } else {
+          filteredData = data;
+        }
+        setMovies(filteredData);
       } catch (err) {
         console.error(err);
         setError('Unable to load movies from the database');
@@ -44,7 +50,7 @@ export default function Home() {
       }
     };
     fetchMovies();
-  }, []);
+  }, [filterType]);
 
   const genres = ['All', ...new Set(movies.flatMap((m) => m.genres || []))];
   const filteredMovies =

@@ -1,5 +1,7 @@
+import Home from '../components/Home';
+
 const SeriesPage = () => {
-  return <div className="status">Series page</div>;
+  return <Home filterType="TVSeries" />;
 };
 
 export default SeriesPage;
