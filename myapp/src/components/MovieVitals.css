@@ -27,6 +27,29 @@
   text-transform: uppercase;
 }
 
+.movie-vitals__card--friends {
+  background: rgba(15, 19, 32, 0.78);
+}
+
+.movie-vitals__card--country {
+  background: rgba(12, 16, 30, 0.78);
+}
+
+.movie-vitals__friends-status {
+  color: rgba(241, 245, 249, 0.72);
+  font-size: 0.82rem;
+}
+
+.movie-vitals__friends-status--error {
+  color: #ff97ae;
+}
+
+.movie-vitals__friends-empty {
+  color: rgba(203, 213, 225, 0.72);
+  font-size: 0.82rem;
+  margin: 0;
+}
+
 .movie-vitals__chips {
   display: flex;
   flex-wrap: wrap;
@@ -45,6 +68,20 @@
 .movie-vitals__chips--inline::-webkit-scrollbar,
 .movie-vitals__chips--inline::-webkit-scrollbar-thumb,
 .movie-vitals__chips--inline::-webkit-scrollbar-track {
+  display: none;
+}
+
+.movie-vitals__chips--row {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding-bottom: 0.35rem;
+  cursor: none;
+  scrollbar-width: none;
+}
+
+.movie-vitals__chips--row::-webkit-scrollbar,
+.movie-vitals__chips--row::-webkit-scrollbar-thumb,
+.movie-vitals__chips--row::-webkit-scrollbar-track {
   display: none;
 }
 
@@ -76,11 +113,6 @@
 .movie-vitals__chip--inline:focus-visible {
   cursor: none;
   transform: translateY(-1px);
-}
-
-.movie-vitals__chip:not(.movie-vitals__chip--inline):hover,
-.movie-vitals__chip:not(.movie-vitals__chip--inline):focus-visible {
-  cursor: pointer;
 }
 
 @media (max-width: 768px) {
