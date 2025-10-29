@@ -5,7 +5,7 @@ import './CrewSearchPage.css';
 
 const FALLBACK_AVATAR =
   'https://ui-avatars.com/api/?name=MM&background=023047&color=ffffff&size=256&length=2';
-const PAGE_SIZE_OPTIONS = [25, 50, 100];
+const PAGE_SIZE_OPTIONS = [30, 60, 120];
 const FILTER_OPTIONS = [
   { label: 'All', value: 'all' },
   { label: 'Cast', value: 'cast' },
