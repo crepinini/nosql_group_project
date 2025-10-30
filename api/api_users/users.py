@@ -181,6 +181,17 @@ def create_user():
     serialized = serialize_document(created_user)
     return jsonify(serialized)
 
+@app.route("/auth/delete/<user_id>", methods=["DELETE"])
+def delete_user(user_id):
+    if not ObjectId.is_valid(user_id):
+        return jsonify({"error": "The ID of the user is invalid"}), 400
+    user = users_collection.find_one({"_id": ObjectId(user_id)})
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    users_collection.delete_one({"_id": ObjectId(user_id)})
+    invalidate_user_cache(user_id)
+    return jsonify({"message": "User is successfully deleted"})
+
 @app.route("/myfriends", methods=["GET"])
 def get_my_friends():
     cache_key = "my_friends_list"
