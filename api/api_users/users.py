@@ -4,18 +4,21 @@ import os
 from bson import ObjectId
 from bson.errors import InvalidId
 from flask import Flask, jsonify, request
+from flask_cors import CORS
 from pymongo import MongoClient
 import redis
 
 
 app = Flask(__name__)
 app.config["JSON_SORT_KEYS"] = False
+CORS(app)
 
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
 client = MongoClient(MONGO_URI)
 db = client["api_users"]
 users_collection = db["users"]
 my_friends_collection = db["my_friends"]
+friend_requests = db["friend_requests"]
 
 r = redis.Redis(
     host=os.environ.get("REDIS_HOST", "localhost"),
@@ -339,6 +342,112 @@ def update_watch_status(user_id):
 
     invalidate_user_cache(user_id)
     return jsonify(watch_statuses)
+
+@app.route("/friend-request", methods=["POST"])
+def send_friend_request():
+    data = request.get_json(silent=True) or {}
+
+    from_user = (data.get("from_user") or "").strip()
+    to_user = (data.get("to_user") or "").strip()
+
+    if not from_user or not to_user:
+        return jsonify({"error": "from_user and to_user are required"}), 400
+
+    if from_user == to_user:
+        return jsonify({"error": "cannot friend yourself"}), 400
+
+    u_from = find_user(from_user)
+    u_to = find_user(to_user)
+    if not u_from or not u_to:
+        return jsonify({"error": "user not found"}), 404
+
+    already_friends_ids = [
+        f.get("_id") if isinstance(f, dict) else f
+        for f in (u_from.get("friends") or [])
+    ]
+    if str(u_to["_id"]) in already_friends_ids:
+        return jsonify({"error": "already friends"}), 409
+
+    existing = friend_requests.find_one({
+        "from_user": str(u_from["_id"]),
+        "to_user": str(u_to["_id"]),
+    })
+    if existing:
+        return jsonify({"message": "request already sent"}), 200
+
+    result = friend_requests.insert_one({
+        "from_user": str(u_from["_id"]),
+        "to_user": str(u_to["_id"]),
+    })
+
+    return jsonify({
+        "request_id": str(result.inserted_id),
+        "from_user": str(u_from["_id"]),
+        "to_user": str(u_to["_id"]),
+    }), 201
+
+@app.route("/friend-requests/<user_id>", methods=["GET"])
+def get_friend_requests(user_id):
+    user = find_user(user_id)
+    if not user:
+        return jsonify({"error": "user not found"}), 404
+
+    pending = list(friend_requests.find({
+        "to_user": str(user["_id"])
+    }))
+
+    requests_payload = []
+    for req in pending:
+        sender_id = req.get("from_user")
+        sender_doc = find_user(sender_id)
+        requests_payload.append({
+            "request_id": str(req["_id"]),
+            "from_user": sender_id,
+            "from_username": sender_doc.get("username") if sender_doc else None,
+            "from_full_name": sender_doc.get("full_name") if sender_doc else None,
+        })
+
+    return jsonify(requests_payload)
+
+@app.route("/friend-request/<request_id>/accept", methods=["POST"])
+def accept_friend_request(request_id):
+    try:
+        fr = friend_requests.find_one({"_id": ObjectId(request_id)})
+    except (InvalidId, TypeError):
+        return jsonify({"error": "invalid request id"}), 400
+
+    if not fr:
+        return jsonify({"error": "request not found"}), 404
+
+    from_id = fr.get("from_user")
+    to_id = fr.get("to_user")
+
+    user_from = find_user(from_id)
+    user_to = find_user(to_id)
+
+    if not user_from or not user_to:
+        return jsonify({"error": "user not found"}), 404
+
+    def add_friend(user_doc, other_id):
+        current_friends = list(user_doc.get("friends") or [])
+        ids_only = [f.get("_id") if isinstance(f, dict) else f for f in current_friends]
+
+        if other_id not in ids_only:
+            current_friends.append({"_id": other_id})
+            users_collection.update_one(
+                {"_id": user_doc["_id"]},
+                {"$set": {"friends": current_friends}}
+            )
+
+    add_friend(user_from, str(user_to["_id"]))
+    add_friend(user_to, str(user_from["_id"]))
+
+    friend_requests.delete_one({"_id": fr["_id"]})
+
+    invalidate_user_cache(from_id)
+    invalidate_user_cache(to_id)
+
+    return jsonify({"status": "accepted"})
 
 
 if __name__ == "__main__":

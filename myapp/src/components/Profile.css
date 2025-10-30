@@ -141,3 +141,490 @@
   opacity: 0.8;
   font-size: 0.85rem;
 }
+
+.friend-requests-container {
+  position: relative;
+  margin-top: 1rem;
+  display: flex;
+  justify-content: center;
+}
+
+.friend-requests-button {
+  background: #00b4d8;
+  border: none;
+  color: white;
+  padding: 0.4rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.friend-requests-button:hover {
+  background: #0097b2;
+}
+
+.friend-requests-popup {
+  position: absolute;
+  top: 120%;
+  background: rgba(12, 16, 30, 0.95);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  padding: 0.8rem;
+  min-width: 260px;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.35);
+  z-index: 50;
+}
+
+.friend-request-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: .5rem;
+  gap: .5rem;
+  color: #fff;
+}
+
+.friend-request-actions button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: white;
+  margin-left: .3rem;
+  font-weight: 500;
+  border-radius: 6px;
+  padding: 0.25rem 0.5rem;
+}
+
+.accept-btn {
+  background-color: #00b4d8;
+}
+
+.ignore-btn {
+  background-color: #555;
+}
+
+.accept-btn:hover {
+  background-color: #0097b2;
+}
+.ignore-btn:hover {
+  background-color: #777;
+}
+
+.friend-action-wrapper {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: center;
+}
+
+.add-friend-button {
+  background: linear-gradient(
+    135deg,
+    rgba(0,180,216,1) 0%,
+    rgba(2,48,71,1) 100%
+  );
+  color: #ffffff;
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 10px;
+  padding: 0.5rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 12px 24px rgba(0,0,0,0.4);
+  transition: all 0.18s ease;
+  min-width: 120px;
+  text-align: center;
+}
+
+.add-friend-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 28px rgba(0,0,0,0.5);
+  background: linear-gradient(
+    135deg,
+    rgba(0,180,216,1) 20%,
+    rgba(2,48,71,1) 100%
+  );
+}
+
+.add-friend-button:disabled {
+  opacity: 0.6;
+  cursor: default;
+  transform: none;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+}
+
+.friend-status-badge {
+  background: rgba(12,16,30,0.9);
+  border: 1px solid rgba(0,180,216,0.6);
+  color: #ffffff;
+  border-radius: 10px;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  min-width: 120px;
+  text-align: center;
+  box-shadow: 0 12px 24px rgba(0,0,0,0.4);
+}
+
+.friend-status-badge.pending {
+  border-color: rgba(255,255,255,0.4);
+  color: rgba(255,255,255,0.8);
+  font-style: italic;
+}
+/* zone sous la bio pour les boutons */
+.profile-actions-row {
+  margin-top: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: flex-start; /* mets 'center' si tu veux centrer */
+}
+
+/* on garde ton look actuel, mais on lui donne une taille cohérente */
+.friend-requests-button {
+  background: rgba(0,180,216,0.2);
+  border: 1px solid rgba(0,180,216,0.6);
+  border-radius: 8px;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 0.9rem;
+  line-height: 1.2;
+  padding: 0.5rem 0.75rem;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+  cursor: pointer;
+}
+
+.friend-requests-button:hover {
+  background: rgba(0,180,216,0.3);
+}
+
+/* le conteneur relatif pour pouvoir popup */
+.friend-requests-container-inline {
+  position: relative;
+}
+
+/* la popup de demandes */
+.friend-requests-popup {
+  position: absolute;
+  top: 110%;
+  left: 0;
+  background: rgba(12,16,30,0.95);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  padding: 0.8rem;
+  min-width: 240px;
+  box-shadow: 0 16px 32px rgba(0,0,0,0.6);
+  z-index: 100;
+  color: #fff;
+  font-size: 0.9rem;
+}
+
+.friend-request-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  padding-bottom: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.friend-request-item:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.friend-request-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.accept-btn,
+.ignore-btn {
+  background: rgba(0,180,216,0.25);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 6px;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #fff;
+  cursor: pointer;
+}
+
+.accept-btn {
+  background: rgba(0,180,216,0.4);
+  border-color: rgba(0,180,216,0.6);
+}
+
+.accept-btn:hover {
+  background: rgba(0,180,216,0.6);
+}
+
+.ignore-btn:hover {
+  background: rgba(255,255,255,0.12);
+}
+
+/* le badge Friends / Request sent / Add friend existant */
+.friend-action-wrapper-inline {
+  display: flex;
+  align-items: center;
+}
+
+.friend-status-badge {
+  background: rgba(12,16,30,0.9);
+  border: 1px solid rgba(0,180,216,0.6);
+  color: #ffffff;
+  border-radius: 10px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  min-width: 120px;
+  text-align: center;
+  box-shadow: 0 12px 24px rgba(0,0,0,0.4);
+}
+
+.friend-status-badge.pending {
+  border-color: rgba(255,255,255,0.4);
+  color: rgba(255,255,255,0.8);
+  font-style: italic;
+}
+
+.add-friend-button {
+  background: linear-gradient(
+    135deg,
+    rgba(0,180,216,1) 0%,
+    rgba(2,48,71,1) 100%
+  );
+  color: #ffffff;
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 10px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 12px 24px rgba(0,0,0,0.4);
+  transition: all 0.18s ease;
+  min-width: 120px;
+  text-align: center;
+}
+
+.add-friend-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 28px rgba(0,0,0,0.5);
+  background: linear-gradient(
+    135deg,
+    rgba(0,180,216,1) 20%,
+    rgba(2,48,71,1) 100%
+  );
+}
+
+.add-friend-button:disabled {
+  opacity: 0.6;
+  cursor: default;
+  transform: none;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+}
+.friend-action-wrapper {
+  display: flex;
+  justify-content: center; /* centrage horizontal */
+  align-items: center;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1.2rem;
+}
+
+/* Style des boutons principaux */
+.add-friend-button,
+.friend-requests-button {
+  background: linear-gradient(135deg, #0099ff, #0055aa);
+  color: #fff;
+  font-weight: 500;
+  border: none;
+  border-radius: 10px;
+  padding: 0.6rem 1.2rem;
+  cursor: pointer;
+  box-shadow: 0 0 10px rgba(0, 153, 255, 0.4);
+  transition: all 0.2s ease-in-out;
+}
+
+.add-friend-button:hover,
+.friend-requests-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 15px rgba(0, 153, 255, 0.6);
+}
+
+/* Badges */
+.friend-status-badge {
+  background: #004c8c;
+  color: #b8dfff;
+  padding: 0.4rem 0.8rem;
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+.friend-status-badge.pending {
+  background: #555555;
+  color: #eeeeee;
+}
+
+/* Popup des demandes */
+.friend-requests-popup {
+  background: #0c1b29;
+  border: 1px solid #1f4566;
+  border-radius: 12px;
+  padding: 1rem;
+  margin-top: 0.8rem;
+  width: 280px;
+  box-shadow: 0 0 20px rgba(0, 153, 255, 0.15);
+}
+
+.friend-request-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.8rem;
+}
+
+.friend-request-actions button {
+  margin-left: 0.4rem;
+  padding: 0.4rem 0.8rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.accept-btn {
+  background-color: #0099ff;
+  color: #fff;
+}
+
+.ignore-btn {
+  background-color: #444;
+  color: #ccc;
+}
+
+.accept-btn:hover {
+  background-color: #00baff;
+}
+
+.ignore-btn:hover {
+  background-color: #666;
+}
+
+.friend-requests-item {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  color: #f8fafc;
+}
+
+.friend-request-header {
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+  gap: 0.5rem;
+}
+
+.friend-request-link {
+  background: rgba(0,0,0,0.2);
+  border: 1px solid rgba(0,180,216,0.4);
+  color: #fff;
+  border-radius: 8px;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  line-height: 1.3;
+  font-weight: 500;
+}
+
+.friend-request-link:hover {
+  background: rgba(0,180,216,0.15);
+  border-color: rgba(0,180,216,0.7);
+}
+
+.friend-request-actions {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.friend-request-accept,
+.friend-request-ignore {
+  background: rgba(15,17,27,0.7);
+  border-radius: 6px;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  min-width: 60px;
+  border: 1px solid rgba(255,255,255,0.15);
+  color: #fff;
+  line-height: 1.2;
+}
+
+.friend-request-accept:hover {
+  background: rgba(34,197,94,0.15); /* vert léger */
+  border-color: rgba(34,197,94,0.6);
+}
+
+.friend-request-ignore:hover {
+  background: rgba(239,68,68,0.12); /* rouge léger */
+  border-color: rgba(239,68,68,0.6);
+}
+
+.friend-requests-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.incoming-request-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .5rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 12px;
+  padding: .75rem 1rem;
+  box-shadow: 0 12px 24px rgba(0,0,0,.4);
+  border: 1px solid rgba(255,255,255,0.08);
+  max-width: 260px;
+}
+
+.incoming-request-label {
+  color: #fff;
+  font-size: .9rem;
+  text-align: center;
+  opacity: .9;
+}
+
+.incoming-request-buttons {
+  display: flex;
+  gap: .5rem;
+}
+
+.friend-request-accept,
+.friend-request-ignore {
+  background: rgba(12,16,30,0.9);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 8px;
+  padding: .4rem .8rem;
+  font-size: .8rem;
+  color: #fff;
+  cursor: pointer;
+  min-width: 70px;
+  box-shadow: 0 12px 24px rgba(0,0,0,.5);
+}
+
+.friend-request-accept {
+  background: rgba(34,197,94,0.15);
+  border-color: rgba(34,197,94,0.4);
+  color: #a7f3d0;
+}
+
+.friend-request-ignore {
+  background: rgba(239,68,68,0.15);
+  border-color: rgba(239,68,68,0.4);
+  color: #fecaca;
+}
