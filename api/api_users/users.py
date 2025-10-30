@@ -164,6 +164,23 @@ def update_authenticate_user(user_id):
     result = users_collection.update_one({"_id": ObjectId(user["_id"])}, {"$set": updates}) # update in MongoDb
     return jsonify({"message": "Your data has been successfully updated!"})
 
+@app.route("/auth/register", methods=["POST"])
+def create_user():
+    payload = request.get_json(silent=True) or {}
+    username = (payload.get("username") or "").strip()
+    password = payload.get("password") or ""
+    existing_user = users_collection.find_one({"username": username})
+    if existing_user:
+        return jsonify({"error": "Username already exists. Please choose another username"})
+    new_user = {
+        "username": username,
+        "password": password,
+    }
+    result = users_collection.insert_one(new_user)
+    created_user = users_collection.find_one({"_id": result.inserted_id})
+    serialized = serialize_document(created_user)
+    return jsonify(serialized)
+
 @app.route("/myfriends", methods=["GET"])
 def get_my_friends():
     cache_key = "my_friends_list"
