@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { buildMoviesUrl } from '../config';
 import './Home.css';
 
 const FALLBACK_POSTER =
@@ -30,7 +31,7 @@ export default function Home({ filterType }) {
       try {
         setIsLoading(true);
         setError(null);
-        const response = await fetch('/movies-series');
+        const response = await fetch(buildMoviesUrl('/movies-series'));
         if (!response.ok) {
           throw new Error('Error loading movies');
         }
