@@ -1,0 +1,60 @@
+.recommendations-page {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+}
+
+.recommendations-hero {
+  align-items: center;
+  background: linear-gradient(
+      135deg,
+      rgba(16, 15, 23, 0.82),
+      rgba(15, 24, 45, 0.78)
+    ),
+    rgba(8, 10, 18, 0.9);
+  border-radius: 28px;
+  box-shadow: 0 28px 46px rgba(0, 0, 0, 0.35);
+  display: flex;
+  justify-content: space-between;
+  padding: clamp(1.8rem, 3vw, 2.6rem) clamp(2rem, 4vw, 3rem);
+}
+
+.recommendations-hero h1 {
+  color: #f8fafc;
+  font-size: clamp(1.9rem, 3.4vw, 2.6rem);
+  margin: 0;
+}
+
+.recommendations-hero p {
+  color: rgba(226, 232, 240, 0.78);
+  font-size: clamp(1rem, 2vw, 1.1rem);
+  margin: 0.75rem 0 0;
+  max-width: 580px;
+}
+
+.recommendations-status {
+  background: rgba(9, 11, 19, 0.78);
+  border-radius: 20px;
+  color: rgba(226, 232, 240, 0.78);
+  margin: 0;
+  padding: 1.1rem 1.4rem;
+}
+
+.recommendations-status--error {
+  border: 1px solid rgba(255, 97, 122, 0.55);
+  color: #ff97ae;
+}
+
+.recommendations-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+}
+
+@media (max-width: 768px) {
+  .recommendations-hero {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+}

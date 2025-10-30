@@ -5,6 +5,7 @@ import MoviePeople from '../components/MoviePeople';
 import MovieTrailer from '../components/MovieTrailer';
 import MovieRail from '../components/MovieRail';
 import MovieVitals from '../components/MovieVitals';
+import MovieDiscussion from '../components/MovieDiscussion';
 import { buildMoviesUrl, buildUsersUrl } from '../config';
 import {
   getStoredUser,
@@ -24,6 +25,50 @@ const curatedSelection = (movies) => {
       return ratingB - ratingA;
     })
     .slice(0, 18);
+};
+
+const extractFavoritesList = (authUser) => {
+  if (!authUser) {
+    return [];
+  }
+  if (Array.isArray(authUser.favorites_movies)) {
+    return authUser.favorites_movies;
+  }
+  if (Array.isArray(authUser.favorites)) {
+    return authUser.favorites;
+  }
+  return [];
+};
+
+const extractRatingsMap = (authUser) => {
+  const source = authUser?.movie_ratings;
+  return source && typeof source === 'object' ? source : {};
+};
+
+const extractCommentRecord = (authUser, movieId) => {
+  if (!authUser || !movieId) {
+    return null;
+  }
+  const comments = authUser?.movie_comments;
+  if (!comments || typeof comments !== 'object') {
+    return null;
+  }
+  return comments[movieId] || null;
+};
+
+const formatFriendCommentDate = (value) => {
+  if (!value) {
+    return '';
+  }
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return '';
+  }
+  return parsed.toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
 };
 
 const MovieDetailPage = () => {
@@ -46,6 +91,15 @@ const MovieDetailPage = () => {
   const [watchStatus, setWatchStatus] = useState('none');
   const [statusPending, setStatusPending] = useState(false);
   const [statusError, setStatusError] = useState(null);
+  const [userRating, setUserRating] = useState(0);
+  const [ratingPending, setRatingPending] = useState(false);
+  const [ratingError, setRatingError] = useState(null);
+  const [userComment, setUserComment] = useState('');
+  const [commentDraft, setCommentDraft] = useState('');
+  const [commentPending, setCommentPending] = useState(false);
+  const [commentError, setCommentError] = useState(null);
+  const [friendComments, setFriendComments] = useState([]);
+  const [isEditingComment, setIsEditingComment] = useState(false);
 
   useEffect(() => {
     const handleAuthChange = () => {
@@ -60,18 +114,6 @@ const MovieDetailPage = () => {
     };
   }, []);
 
-  useEffect(() => {
-    const handleAuthChange = () => {
-      setAuthUser(getStoredUser());
-    };
-    const unsubscribe = subscribeToAuthChanges(handleAuthChange);
-    window.addEventListener('storage', handleAuthChange);
-
-    return () => {
-      unsubscribe();
-      window.removeEventListener('storage', handleAuthChange);
-    };
-  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -135,23 +177,40 @@ const MovieDetailPage = () => {
     if (!heroMovieId) {
       setIsFavorite(false);
       setWatchStatus('none');
+      setUserRating(0);
+      setUserComment('');
+      setCommentDraft('');
+      setIsEditingComment(false);
       return;
     }
 
-    const favoritesList = Array.isArray(authUser?.favorites_movies)
-      ? authUser.favorites_movies
-      : [];
+    const favoritesList = extractFavoritesList(authUser);
     const membership = favoritesList.some((entry) => entry?._id === heroMovieId);
     setIsFavorite(membership);
 
     const statusMap = authUser?.watch_statuses || {};
     const normalizedStatus = statusMap?.[heroMovieId] || 'none';
     setWatchStatus(normalizedStatus);
+
+    const ratingsMap = extractRatingsMap(authUser);
+    const ratingValue = Number(ratingsMap?.[heroMovieId]) || 0;
+    setUserRating(ratingValue);
+
+    const commentRecord = extractCommentRecord(authUser, heroMovieId);
+    const commentText =
+      commentRecord && typeof commentRecord.text === 'string'
+        ? commentRecord.text
+        : '';
+    setUserComment(commentText);
+    setCommentDraft(commentText);
+    setIsEditingComment(false);
   }, [authUser, heroMovieId]);
 
   useEffect(() => {
     setFavoriteError(null);
     setStatusError(null);
+    setRatingError(null);
+    setCommentError(null);
   }, [heroMovieId]);
 
   const handleToggleFavorite = async () => {
@@ -248,11 +307,163 @@ const MovieDetailPage = () => {
     }
   };
 
+  const handleRateMovie = async (value) => {
+    if (!userId || !heroMovieId) {
+      setRatingError('Sign in to rate this title.');
+      return;
+    }
+
+    const ratingValue = value && value >= 1 ? value : null;
+
+    setRatingPending(true);
+    setRatingError(null);
+
+    try {
+      const response = await fetch(buildUsersUrl(`/users/${userId}/ratings`), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          movie_id: heroMovieId,
+          rating: ratingValue,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const updatedRatings = await response.json();
+      const nextRating = Number(updatedRatings?.[heroMovieId]) || 0;
+      setUserRating(nextRating);
+
+      const nextUser = {
+        ...authUser,
+        movie_ratings: updatedRatings,
+      };
+      setAuthUser(nextUser);
+      storeUser(nextUser);
+    } catch (err) {
+      console.error('Failed to update rating', err);
+      setRatingError('Unable to save your rating right now.');
+    } finally {
+      setRatingPending(false);
+    }
+  };
+
+  async function updateComment(textValue) {
+    if (!userId || !heroMovieId) {
+      setCommentError('Sign in to comment on this title.');
+      return;
+    }
+
+    const normalized = (textValue || '').trim();
+
+    setCommentPending(true);
+    setCommentError(null);
+
+    try {
+      const response = await fetch(buildUsersUrl(`/users/${userId}/comments`), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          movie_id: heroMovieId,
+          comment: normalized,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const updatedComments = await response.json();
+      const record = updatedComments?.[heroMovieId];
+      const nextComment =
+        record && typeof record.text === 'string' ? record.text : '';
+      setUserComment(nextComment);
+      setCommentDraft(nextComment);
+      setIsEditingComment(false);
+
+      const nextUser = {
+        ...authUser,
+        movie_comments: updatedComments,
+      };
+      const updatedReviews = Array.isArray(authUser?.reviews)
+        ? [...authUser.reviews]
+        : [];
+      const existingIndex = updatedReviews.findIndex(
+        (entry) => entry && entry._id === heroMovieId,
+      );
+
+      if (nextComment) {
+        const today = new Date().toISOString().slice(0, 10);
+        const previous = existingIndex >= 0 ? updatedReviews[existingIndex] || {} : {};
+        const helpfulVotes = Number.isFinite(Number(previous?.helpful_votes))
+          ? Number(previous.helpful_votes)
+          : 0;
+        const updatedEntry = {
+          ...previous,
+          _id: heroMovieId,
+          review_text: nextComment,
+          date_posted: today,
+          helpful_votes: helpfulVotes,
+        };
+        if (existingIndex >= 0) {
+          updatedReviews.splice(existingIndex, 1, updatedEntry);
+        } else {
+          updatedReviews.push(updatedEntry);
+        }
+      } else if (existingIndex >= 0) {
+        updatedReviews.splice(existingIndex, 1);
+      }
+
+      nextUser.reviews = updatedReviews;
+      setAuthUser(nextUser);
+      storeUser(nextUser);
+    } catch (err) {
+      console.error('Failed to update comment', err);
+      setCommentError('Unable to save your comment right now.');
+    } finally {
+      setCommentPending(false);
+    }
+  };
+
+  const handleCommentChange = (value) => {
+    setCommentError(null);
+    setCommentDraft(value);
+  };
+
+  const handleSubmitComment = async () => {
+    await updateComment(commentDraft);
+  };
+
+  const handleClearComment = async () => {
+    if (isEditingComment) {
+      setCommentDraft(userComment);
+      setIsEditingComment(false);
+      return;
+    }
+    if (!userComment) {
+      setCommentDraft('');
+      return;
+    }
+    await updateComment('');
+  };
+
+  const handleDeleteComment = async () => {
+    await updateComment('');
+  };
+
+  const handleEditComment = () => {
+    setCommentDraft(userComment);
+    setIsEditingComment(true);
+  };
+
   useEffect(() => {
     const movieIdentifier = heroMovieId;
     const imdbIdentifier = heroMovieImdbId;
 
     setFavoriteFriends([]);
+    setFriendComments([]);
     setFriendsStatus({ loading: false, error: null });
     setHasFriendNetwork(false);
 
@@ -276,6 +487,8 @@ const MovieDetailPage = () => {
     const loadFriends = async () => {
       setFriendsStatus({ loading: true, error: null });
 
+      const commentEntries = [];
+
       try {
         const results = await Promise.all(
           friendRefs.map(async (friendRef) => {
@@ -295,6 +508,24 @@ const MovieDetailPage = () => {
               }
 
               const payload = await response.json();
+              const friendName = payload.full_name || payload.username || 'Friend';
+              const commentRecord =
+                payload?.movie_comments?.[movieIdentifier] ||
+                (imdbIdentifier ? payload?.movie_comments?.[imdbIdentifier] : null);
+
+              if (
+                commentRecord &&
+                typeof commentRecord.text === 'string' &&
+                commentRecord.text.trim()
+              ) {
+                commentEntries.push({
+                  id: payload._id || friendId,
+                  name: friendName,
+                  comment: commentRecord.text.trim(),
+                  rawUpdatedAt: commentRecord.updated_at || null,
+                });
+              }
+
               const favoritesList = Array.isArray(payload?.favorites_movies)
                 ? payload.favorites_movies
                 : [];
@@ -347,6 +578,29 @@ const MovieDetailPage = () => {
           });
 
         setFavoriteFriends(deduped);
+
+        const commentMap = [];
+        const seenCommentIds = new Set();
+        commentEntries
+          .filter((entry) => entry?.comment)
+          .sort((a, b) => {
+            const aTime = a.rawUpdatedAt ? new Date(a.rawUpdatedAt).getTime() : 0;
+            const bTime = b.rawUpdatedAt ? new Date(b.rawUpdatedAt).getTime() : 0;
+            return bTime - aTime;
+          })
+          .forEach((entry) => {
+            if (!entry?.id || seenCommentIds.has(entry.id)) {
+              return;
+            }
+            seenCommentIds.add(entry.id);
+            commentMap.push({
+              id: entry.id,
+              name: entry.name,
+              comment: entry.comment,
+              updatedAt: formatFriendCommentDate(entry.rawUpdatedAt),
+            });
+          });
+        setFriendComments(commentMap);
         setFriendsStatus({ loading: false, error: null });
       } catch (err) {
         if (!cancelled) {
@@ -356,6 +610,7 @@ const MovieDetailPage = () => {
               loading: false,
               error: 'Unable to load which friends favorited this title.',
             });
+            setFriendComments([]);
           } else {
             setFriendsStatus({ loading: false, error: null });
           }
@@ -407,12 +662,32 @@ const MovieDetailPage = () => {
         onToggleFavorite={handleToggleFavorite}
         favoritePending={favoritePending}
         favoriteError={favoriteError}
+        userRating={userRating}
+        onRateMovie={handleRateMovie}
+        ratingPending={ratingPending}
+        ratingError={ratingError}
         watchStatus={watchStatus}
         onWatchStatusChange={handleUpdateStatus}
         statusPending={statusPending}
         statusError={statusError}
         canModify={Boolean(userId)}
       />
+      {userId ? (
+        <MovieDiscussion
+          hasSavedComment={Boolean(userComment && userComment.trim())}
+          canComment={Boolean(userId)}
+          commentDraft={commentDraft}
+          onCommentChange={handleCommentChange}
+          onSubmitComment={handleSubmitComment}
+          onClearComment={handleClearComment}
+          onDeleteComment={handleDeleteComment}
+          onEditComment={handleEditComment}
+          isEditingComment={isEditingComment}
+          commentPending={commentPending}
+          commentError={commentError}
+          friendComments={friendComments}
+        />
+      ) : null}
       <MovieVitals
         movie={heroMovie}
         favoriteFriends={favoriteFriends}

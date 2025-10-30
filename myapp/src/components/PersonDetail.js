@@ -32,7 +32,15 @@ const extractYear = (entry) => {
   return null;
 };
 
-const PersonDetail = ({ person, knownForDetails = [] }) => {
+const PersonDetail = ({
+  person,
+  knownForDetails = [],
+  isFavorite = false,
+  onToggleFavorite,
+  favoritePending = false,
+  favoriteError = null,
+  canModify = false,
+}) => {
   const [isBiographyExpanded, setBiographyExpanded] = useState(false);
 
   useEffect(() => {
@@ -69,6 +77,7 @@ const PersonDetail = ({ person, knownForDetails = [] }) => {
 
   const biographyText = typeof biography === 'string' ? biography : '';
   const shouldClampBiography = biographyText.trim().length > 400;
+  const canFavorite = typeof onToggleFavorite === 'function';
 
   const biographyClassName = [
     'person-detail__biography',
@@ -95,16 +104,44 @@ const PersonDetail = ({ person, knownForDetails = [] }) => {
             <h1 className="person-detail__title" id="person-detail-title">
               {name}
             </h1>
-            {externalUrl ? (
-              <a
-                className="person-detail__external"
-                href={externalUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                View on IMDb
-              </a>
-            ) : null}
+            <div className="person-detail__header-actions">
+              {externalUrl ? (
+                <a
+                  className="person-detail__external"
+                  href={externalUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  View on IMDb
+                </a>
+              ) : null}
+              {canFavorite ? (
+                <button
+                  type="button"
+                  className={`person-detail__favorite${
+                    isFavorite ? ' person-detail__favorite--active' : ''
+                  }`}
+                  onClick={() => {
+                    if (!favoritePending && canModify && onToggleFavorite) {
+                      onToggleFavorite();
+                    }
+                  }}
+                  disabled={!canModify || favoritePending || !onToggleFavorite}
+                  aria-pressed={isFavorite}
+                >
+                  <span className="person-detail__favorite-icon" aria-hidden="true">
+                    {isFavorite ? '★' : '☆'}
+                  </span>
+                  <span className="person-detail__favorite-label">
+                    {favoritePending
+                      ? 'Saving...'
+                      : isFavorite
+                      ? 'Favorited'
+                      : 'Add to favorites'}
+                  </span>
+                </button>
+              ) : null}
+            </div>
           </div>
 
           {Array.isArray(role) && role.length > 0 ? (
@@ -135,6 +172,19 @@ const PersonDetail = ({ person, knownForDetails = [] }) => {
               We don&apos;t have a biography for this person just yet.
             </p>
           )}
+
+          {canFavorite && (!canModify || favoriteError) ? (
+            <div className="person-detail__favorite-messages">
+              {!canModify ? (
+                <span className="person-detail__favorite-hint">
+                  Sign in to keep your favorite people in sync.
+                </span>
+              ) : null}
+              {favoriteError ? (
+                <span className="person-detail__favorite-error">{favoriteError}</span>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       </div>
 
@@ -222,10 +272,20 @@ PersonDetail.propTypes = {
       release_date: PropTypes.string,
     }),
   ),
+  isFavorite: PropTypes.bool,
+  onToggleFavorite: PropTypes.func,
+  favoritePending: PropTypes.bool,
+  favoriteError: PropTypes.string,
+  canModify: PropTypes.bool,
 };
 
 PersonDetail.defaultProps = {
   knownForDetails: [],
+  isFavorite: false,
+  onToggleFavorite: null,
+  favoritePending: false,
+  favoriteError: null,
+  canModify: false,
 };
 
 export default PersonDetail;

@@ -6,6 +6,7 @@ import CrewPage from './pages/CrewPage';
 import ProfilePage from './pages/ProfilePage';
 import ActorDetailPage from './pages/ActorDetailPage';
 import MovieDetailPage from './pages/MovieDetailPage';
+import RecommendationsPage from './pages/RecommendationsPage';
 import Home from './components/Home';
 import Login from './components/Login';
 import './App.css';
@@ -36,6 +37,7 @@ function App() {
             <Route path="/actors/:actorId" element={<ActorDetailPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/movies-series/:movieId" element={<MovieDetailPage />} />
+            <Route path="/recommendations" element={<RecommendationsPage />} />
             <Route path="/login" element={<Login />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

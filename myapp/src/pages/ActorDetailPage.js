@@ -1,7 +1,24 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import PersonDetail from '../components/PersonDetail';
-import { buildPeopleUrl, buildMoviesUrl } from '../config';
+import { buildPeopleUrl, buildMoviesUrl, buildUsersUrl } from '../config';
+import {
+  getStoredUser,
+  storeUser,
+  subscribeToAuthChanges,
+} from '../components/Login/auth';
+
+const extractFavoritePeople = (user) => {
+  if (!user) {
+    return [];
+  }
+
+  if (Array.isArray(user.favorites_people)) {
+    return user.favorites_people;
+  }
+
+  return [];
+};
 
 const ActorDetailPage = () => {
   const { actorId } = useParams();
@@ -9,6 +26,24 @@ const ActorDetailPage = () => {
   const [knownForDetails, setKnownForDetails] = useState([]);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [authUser, setAuthUser] = useState(() => getStoredUser());
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [favoritePending, setFavoritePending] = useState(false);
+  const [favoriteError, setFavoriteError] = useState(null);
+
+  useEffect(() => {
+    const handleAuthChange = () => setAuthUser(getStoredUser());
+    const unsubscribe = subscribeToAuthChanges(handleAuthChange);
+    window.addEventListener('storage', handleAuthChange);
+    return () => {
+      unsubscribe();
+      window.removeEventListener('storage', handleAuthChange);
+    };
+  }, []);
+
+  useEffect(() => {
+    setFavoriteError(null);
+  }, [actorId]);
 
   useEffect(() => {
     if (!actorId) {
@@ -114,6 +149,77 @@ const ActorDetailPage = () => {
     };
   }, [person]);
 
+  useEffect(() => {
+    if (!person?._id) {
+      setIsFavorite(false);
+      return;
+    }
+
+    const favorites = extractFavoritePeople(authUser);
+    const membership = favorites.some((entry) => {
+      const value =
+        (entry && (entry._id || entry.id || entry.person_id || entry.imdb_id)) ||
+        entry;
+      if (!value) {
+        return false;
+      }
+      return String(value) === String(person._id);
+    });
+    setIsFavorite(membership);
+  }, [authUser, person?._id]);
+
+  const userId = authUser?._id || authUser?.username || null;
+
+  const handleToggleFavorite = async () => {
+    if (!userId || !person?._id) {
+      setFavoriteError('Sign in to manage your favorite people.');
+      return;
+    }
+
+    setFavoritePending(true);
+    setFavoriteError(null);
+
+    try {
+      const response = await fetch(
+        buildUsersUrl(`/users/${userId}/favorites-people`),
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            person_id: person._id,
+            action: isFavorite ? 'remove' : 'add',
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const updatedFavorites = await response.json();
+      const membership = Array.isArray(updatedFavorites)
+        ? updatedFavorites.some(
+            (entry) => (entry?._id || entry?.id || entry) === person._id,
+          )
+        : false;
+      setIsFavorite(membership);
+
+      const nextUser = {
+        ...authUser,
+        favorites_people: Array.isArray(updatedFavorites)
+          ? updatedFavorites
+          : [],
+      };
+      setAuthUser(nextUser);
+      storeUser(nextUser);
+    } catch (err) {
+      console.error('Failed to toggle favorite person', err);
+      setFavoriteError('Unable to update favorites right now.');
+    } finally {
+      setFavoritePending(false);
+    }
+  };
+
   if (error) {
     return (
       <div className="status status--error" role="alert">
@@ -137,7 +243,15 @@ const ActorDetailPage = () => {
 
   return (
     <div className="actor-detail-page">
-      <PersonDetail person={person} knownForDetails={knownForDetails} />
+      <PersonDetail
+        person={person}
+        knownForDetails={knownForDetails}
+        isFavorite={isFavorite}
+        onToggleFavorite={handleToggleFavorite}
+        favoritePending={favoritePending}
+        favoriteError={favoriteError}
+        canModify={Boolean(userId)}
+      />
       <div className="actor-detail-page__actions">
         <Link to="/" className="actor-detail-page__back">
           ← Back to home

@@ -165,34 +165,6 @@ def update_authenticate_user(user_id):
     result = users_collection.update_one({"_id": ObjectId(user["_id"])}, {"$set": updates}) # update in MongoDb
     return jsonify({"message": "Your data has been successfully updated!"})
 
-@app.route("/auth/register", methods=["POST"])
-def create_user():
-    payload = request.get_json(silent=True) or {}
-    username = (payload.get("username") or "").strip()
-    password = payload.get("password") or ""
-    existing_user = users_collection.find_one({"username": username})
-    if existing_user:
-        return jsonify({"error": "Username already exists. Please choose another username"})
-    new_user = {
-        "username": username,
-        "password": password,
-    }
-    result = users_collection.insert_one(new_user)
-    created_user = users_collection.find_one({"_id": result.inserted_id})
-    serialized = serialize_document(created_user)
-    return jsonify(serialized)
-
-@app.route("/auth/delete/<user_id>", methods=["DELETE"])
-def delete_user(user_id):
-    if not ObjectId.is_valid(user_id):
-        return jsonify({"error": "The ID of the user is invalid"}), 400
-    user = users_collection.find_one({"_id": ObjectId(user_id)})
-    if not user:
-        return jsonify({"error": "User not found"}), 404
-    users_collection.delete_one({"_id": ObjectId(user_id)})
-    invalidate_user_cache(user_id)
-    return jsonify({"message": "User is successfully deleted"})
-
 @app.route("/myfriends", methods=["GET"])
 def get_my_friends():
     cache_key = "my_friends_list"
@@ -638,35 +610,6 @@ def accept_friend_request(request_id):
     invalidate_user_cache(to_id)
 
     return jsonify({"status": "accepted"})
-
-
-@app.route("/friend-request/<request_id>/refuse", methods=["POST"])
-def refuse_friend_request(request_id):
-    try:
-        fr = friend_requests.find_one({"_id": ObjectId(request_id)})
-    except (InvalidId, TypeError):
-        return jsonify({"error": "invalid request id"}), 400
-
-    if not fr:
-        return jsonify({"error": "request not found"}), 404
-
-    friend_requests.delete_one({"_id": fr["_id"]})
-
-    return jsonify({"status": "refused"})
-
-@app.route("/friend-request/<from_user>/<to_user>/cancel", methods=["POST"])
-def cancel_friend_request(from_user, to_user):
-    fr = friend_requests.find_one({
-        "from_user": from_user,
-        "to_user": to_user
-    })
-
-    if not fr:
-        return jsonify({"error": "no such friend request"}), 404
-
-    friend_requests.delete_one({"_id": fr["_id"]})
-
-    return jsonify({"status": "cancelled"})
 
 
 if __name__ == "__main__":

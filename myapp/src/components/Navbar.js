@@ -34,6 +34,7 @@ const Navbar = () => {
         <Link to="/movies">Movies</Link>
         <Link to="/series">Series</Link>
         <Link to="/crew">Cast &amp; Crew</Link>
+        <Link to="/recommendations">Recommendations</Link>
         <Link to="/profile">MyProfile</Link>
       </nav>
       <div className="navbar__actions">

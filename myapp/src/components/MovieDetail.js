@@ -30,6 +30,10 @@ const MovieDetail = ({
   onToggleFavorite,
   favoritePending = false,
   favoriteError = null,
+  userRating = 0,
+  onRateMovie,
+  ratingPending = false,
+  ratingError = null,
   watchStatus = 'none',
   onWatchStatusChange,
   statusPending = false,
@@ -139,6 +143,17 @@ const MovieDetail = ({
     onToggleFavorite();
   };
 
+  const resolvedRating = Number.isFinite(Number(userRating))
+    ? Number(userRating)
+    : 0;
+
+  const handleRateClick = (value) => {
+    if (!onRateMovie || !canModify || ratingPending) {
+      return;
+    }
+    onRateMovie(value);
+  };
+
   return (
     <section
       className="movie-detail"
@@ -170,6 +185,26 @@ const MovieDetail = ({
             </span>
           ) : null}
           <div className="movie-detail__meta-actions">
+            <div className="movie-detail__rating" role="group" aria-label="Your rating">
+              {[1, 2, 3, 4, 5].map((value) => {
+                const isFilled = value <= resolvedRating;
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    className={`movie-detail__rating-star${
+                      isFilled ? ' movie-detail__rating-star--filled' : ''
+                    }`}
+                    onClick={() => handleRateClick(value === resolvedRating ? 0 : value)}
+                    disabled={!canModify || ratingPending || !onRateMovie}
+                    aria-label={`Rate ${value} star${value === 1 ? '' : 's'}`}
+                    aria-pressed={isFilled}
+                  >
+                    {isFilled ? '★' : '☆'}
+                  </button>
+                );
+              })}
+            </div>
             <button
               type="button"
               className={`movie-detail__favorite ${
@@ -208,12 +243,15 @@ const MovieDetail = ({
               </select>
             </label>
           </div>
-          {(!canModify || favoriteError || statusError) ? (
+          {(!canModify || favoriteError || statusError || ratingError) ? (
             <div className="movie-detail__meta-notes">
               {!canModify ? (
                 <span className="movie-detail__action-hint">
-                  Sign in to keep favorites and statuses in sync.
+                  Sign in to keep favorites, ratings, and statuses in sync.
                 </span>
+              ) : null}
+              {ratingError ? (
+                <span className="movie-detail__action-error">{ratingError}</span>
               ) : null}
               {favoriteError ? (
                 <span className="movie-detail__action-error">{favoriteError}</span>
@@ -264,6 +302,8 @@ const MovieDetail = ({
 };
 
 export default MovieDetail;
+
+
 
 
 

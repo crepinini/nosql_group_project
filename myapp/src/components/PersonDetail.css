@@ -56,11 +56,19 @@
 }
 
 .person-detail__header {
-  align-items: center;
+  align-items: flex-start;
   display: flex;
   flex-wrap: wrap;
   gap: 1rem;
   justify-content: space-between;
+}
+
+.person-detail__header-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: flex-end;
 }
 
 .person-detail__title {
@@ -85,6 +93,52 @@
   background: rgba(0, 180, 216, 0.25);
   color: #fff;
   outline: none;
+}
+
+.person-detail__favorite {
+  align-items: center;
+  background: rgba(12, 16, 30, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 999px;
+  color: rgba(248, 250, 252, 0.92);
+  cursor: pointer;
+  display: inline-flex;
+  gap: 0.45rem;
+  padding: 0.3rem 0.95rem;
+  height: 2.3rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.person-detail__favorite:hover,
+.person-detail__favorite:focus-visible {
+  background: rgba(0, 180, 216, 0.25);
+  border-color: rgba(0, 180, 216, 0.45);
+  color: #fff;
+  outline: none;
+}
+
+.person-detail__favorite--active {
+  background: rgba(0, 180, 216, 0.35);
+  border-color: rgba(0, 180, 216, 0.6);
+  color: #fff;
+}
+
+.person-detail__favorite:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.person-detail__favorite-icon {
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+.person-detail__favorite-label {
+  white-space: nowrap;
 }
 
 .person-detail__roles {
@@ -119,6 +173,22 @@
 .person-detail__biography--muted {
   color: rgba(255, 255, 255, 0.6);
   font-style: italic;
+}
+
+.person-detail__favorite-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.person-detail__favorite-hint {
+  color: rgba(226, 232, 240, 0.65);
+  font-size: 0.82rem;
+}
+
+.person-detail__favorite-error {
+  color: #ff97ae;
+  font-size: 0.82rem;
 }
 
 .person-detail__biography-toggle {

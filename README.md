@@ -38,4 +38,14 @@ Movies Series App
 - https://gist.github.com/SebastianUdden/b07cd20874ab14648c3e98e708241276
 - https://developer.mozilla.org/en-US/docs/Web/CSS/clamp
 - https://www.designsystemscollective.com/fluid-typographic-scales-revolutionize-your-responsive-design-0d10ed7f740e
-
+- https://www.geeksforgeeks.org/reactjs/how-to-implement-search-filter-functionality-in-reactjs/
+- https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Frameworks_libraries/React_interactivity_filtering_conditional_rendering
+- https://medium.com/@reidwilliamson2/react-and-filter-6dc8ea48d69b
+- https://dev.to/laurentyson85/constructing-search-filter-functionality-in-react-dnd
+- https://www.geeksforgeeks.org/reactjs/how-to-implement-multiple-filters-in-react/
+- https://www.geeksforgeeks.org/reactjs/react-architecture-pattern-and-best-practices/
+- https://react.dev/learn/build-a-react-app-from-scratch
+- https://www.geeksforgeeks.org/reactjs/react-architecture-pattern-and-best-practices/
+- https://react.dev/learn/thinking-in-react
+- https://builtin.com/articles/react-search-bar
+- https://www.geeksforgeeks.org/reactjs/how-to-create-dynamic-search-box-in-reactjs/

@@ -21,7 +21,7 @@
                     "_id": "ms000000000009"
                 }
             ],
-            "favorites_crews": [
+            "favorites_people": [
                 {
                     "_id": "p000000000002"
                 },
@@ -95,7 +95,7 @@
                     "_id": "ms000000000011"
                 }
             ],
-            "favorites_crews": [
+            "favorites_people": [
                 {
                     "_id": "p000000000002"
                 },
@@ -169,7 +169,7 @@
                     "_id": "ms000000000011"
                 }
             ],
-            "favorites_crews": [
+            "favorites_people": [
                 {
                     "_id": "p000000000002"
                 },
