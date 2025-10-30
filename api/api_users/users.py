@@ -478,5 +478,34 @@ def accept_friend_request(request_id):
     return jsonify({"status": "accepted"})
 
 
+@app.route("/friend-request/<request_id>/refuse", methods=["POST"])
+def refuse_friend_request(request_id):
+    try:
+        fr = friend_requests.find_one({"_id": ObjectId(request_id)})
+    except (InvalidId, TypeError):
+        return jsonify({"error": "invalid request id"}), 400
+
+    if not fr:
+        return jsonify({"error": "request not found"}), 404
+
+    friend_requests.delete_one({"_id": fr["_id"]})
+
+    return jsonify({"status": "refused"})
+
+@app.route("/friend-request/<from_user>/<to_user>/cancel", methods=["POST"])
+def cancel_friend_request(from_user, to_user):
+    fr = friend_requests.find_one({
+        "from_user": from_user,
+        "to_user": to_user
+    })
+
+    if not fr:
+        return jsonify({"error": "no such friend request"}), 404
+
+    friend_requests.delete_one({"_id": fr["_id"]})
+
+    return jsonify({"status": "cancelled"})
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5001, debug=True)

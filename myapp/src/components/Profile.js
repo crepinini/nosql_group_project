@@ -474,10 +474,10 @@ export default function Profile() {
   }
 
 
-  async function handleIgnoreRequest(requestId) {
+  async function handleRefuseRequest(requestId) {
     try {
       const res = await fetch(
-        `http://localhost:5001/friend-request/${requestId}/ignore`,
+        `http://localhost:5001/friend-request/${requestId}/refuse`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -485,7 +485,7 @@ export default function Profile() {
       );
 
       if (!res.ok) {
-        console.error('ignore failed', res.status);
+        console.error('refuse failed', res.status);
         return;
       }
 
@@ -497,18 +497,30 @@ export default function Profile() {
         setIncomingRequest(null);
       }
 
-      if (authUser && authUser._id === profile._id) {
-        const resProfile = await fetch(`/myprofile?user_id=${authUser._id}`);
-        if (resProfile.ok) {
-          const data = await resProfile.json();
-          setProfile(data);
-        }
-      }
     } catch (err) {
-      console.error('ignore error', err);
+      console.error('refuse error', err);
     }
   }
 
+  async function handleCancelRequest() {
+    if (!authUser || !profile) return;
+
+    try {
+      const res = await fetch(
+        `http://localhost:5001/friend-request/${authUser._id}/${profile._id}/cancel`,
+        { method: 'POST' }
+      );
+
+      if (!res.ok) {
+        console.error('cancel failed', res.status);
+        return;
+      }
+
+      setRequestSent(false); // on repasse à "pas de demande"
+    } catch (err) {
+      console.error('cancel error', err);
+    }
+  }
 
   return (
     <div className="profile-page">
@@ -575,10 +587,11 @@ export default function Profile() {
 
                             <button
                               className="friend-request-ignore"
-                              onClick={() => handleIgnoreRequest(req.request_id)}
+                              onClick={() => handleRefuseRequest(req.request_id)}
                             >
-                              Ignore
+                              Refuse
                             </button>
+
                           </div>
                         </div>
                       </li>
@@ -612,14 +625,24 @@ export default function Profile() {
 
                     <button
                       className="friend-request-ignore"
-                      onClick={() => handleIgnoreRequest(incomingRequest.request_id)}
+                      onClick={() => handleRefuseRequest(incomingRequest.request_id)}
                     >
-                      Ignore
+                      Refuse
                     </button>
+
                   </div>
                 </div>
               ) : requestSent ? (
-                <div className="friend-status-badge pending">Request sent</div>
+                <div className="friend-status-badge pending">
+                  Request sent
+                  <button
+                    className="cancel-request-button"
+                    onClick={handleCancelRequest}
+                  >
+                    Cancel
+                  </button>
+                </div>
+
               ) : (
                 <button
                   className="add-friend-button"

@@ -628,3 +628,27 @@
   border-color: rgba(239,68,68,0.4);
   color: #fecaca;
 }
+
+.cancel-request-button {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  color: #ccc;
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 0.3rem 0.6rem;
+  margin-left: 0.6rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cancel-request-button:hover {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #fecaca;
+  transform: translateY(-1px);
+}
+
+.cancel-request-button:active {
+  transform: scale(0.97);
+}

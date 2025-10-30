@@ -228,6 +228,50 @@
                 "friends_count": 2
             },
             "watch_statuses": {}
+        },
+        {
+            "_id": "u000000000004",
+            "username": "alex_m",
+            "password": "alex123",
+            "full_name": "Alex Martin",
+            "member_since": "2022-04-17",
+            "birthdate": "2000-07-14",
+            "location_city": "Namur",
+            "location_country": "Belgium",
+            "about_me": "Data analyst passionate about cinematography and storytelling patterns. I love charting narrative structures like datasets.",
+            "favorites_movies": [],
+            "favorites_crews": [],
+            "reviews": [],
+            "friends": [],
+            "list": [],
+            "stats": {
+                "total_favorites": 3,
+                "total_reviews": 2,
+                "friends_count": 0
+            },
+            "watch_statuses": {}
+        },
+        {
+            "_id": "u000000000005",
+            "username": "clara_t",
+            "password": "clara123",
+            "full_name": "Clara Tissot",
+            "member_since": "2023-09-03",
+            "birthdate": "2002-03-09",
+            "location_city": "Liège",
+            "location_country": "Belgium",
+            "about_me": "Cultural studies student drawn to feminist cinema and poetic imagery. I write mini-essays after every film.",
+            "favorites_movies": [],
+            "favorites_crews": [],
+            "reviews": [],
+            "friends": [],
+            "list": [],
+            "stats": {
+                "total_favorites": 3,
+                "total_reviews": 1,
+                "friends_count": 0
+            },
+            "watch_statuses": {}
         }
     ]
 }
