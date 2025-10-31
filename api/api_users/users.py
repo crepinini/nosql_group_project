@@ -801,5 +801,60 @@ def update_profile(user_id):
 
     return jsonify(updated_user)
 
+
+@app.route("/users/<user_a>/friends/<user_b>", methods=["DELETE"])
+def delete_friend(user_a, user_b):
+    user_A = find_user(user_a)
+    user_B = find_user(user_b)
+
+    if not user_A or not user_B:
+        return jsonify({"error": "user not found"}), 404
+    new_friends_A = []
+    for friend in (user_A.get("friends") or []):
+        if isinstance(friend, dict):
+            friend_id = friend.get("_id")
+        else:
+            friend_id = friend
+        if friend_id != str(user_B["_id"]):
+            new_friends_A.append(friend)
+
+    users_collection.update_one(
+        {"_id": user_A["_id"]},
+        {"$set": {"friends": new_friends_A}}
+    )
+
+    new_friends_B = []
+    for friend in (user_B.get("friends") or []):
+        if isinstance(friend, dict):
+            friend_id = friend.get("_id")
+        else:
+            friend_id = friend
+        if friend_id != str(user_A["_id"]):
+            new_friends_B.append(friend)
+
+    users_collection.update_one(
+        {"_id": user_B["_id"]},
+        {"$set": {"friends": new_friends_B}}
+    )
+
+    friend_requests.delete_many({
+        "$or": [
+            {"from_user": str(user_A["_id"]), "to_user": str(user_B["_id"])},
+            {"from_user": str(user_B["_id"]), "to_user": str(user_A["_id"])}
+        ]
+    })
+    
+    try:
+        r.delete(f"profile:{user_a}")
+        r.delete(f"profile:{user_b}")
+        r.delete(f"user_detail:{user_a}")
+        r.delete(f"user_detail:{user_b}")
+        print(f"cache deleted for users {user_a} and {user_b}")
+    except Exception as e:
+        print("cache delete failed:", e)
+
+    return jsonify({"status": "friend deleted"})
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5001, debug=True)

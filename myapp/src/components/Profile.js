@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { getStoredUser, storeUser } from './Login/auth';
+import FavoritesRail from './FavoritesRail';
+import './RecommendationRail.css';
+
 
 import './Profile.css';
 
@@ -41,6 +44,25 @@ export default function Profile() {
   const [sendingRequest, setSendingRequest] = useState(false);
   const [pendingRequests, setPendingRequests] = useState([]);
   const [incomingRequest, setIncomingRequest] = useState(null);
+  const [showUnfriendMenu, setShowUnfriendMenu] = useState(false);
+  const [removingFriend, setRemovingFriend] = useState(false);
+  const [showIncomingMenu, setShowIncomingMenu] = useState(false);
+  const [processingIncoming, setProcessingIncoming] = useState(false);
+  const [friendCountOverride, setFriendCountOverride] = useState(null);
+  const stats = useMemo(() => {
+    const baseFriends = Array.isArray(profile?.friends)
+      ? profile.friends.length
+      : 0;
+
+    return {
+      friends:
+        friendCountOverride !== null ? friendCountOverride : baseFriends,
+      favorites: normalizeFavorites(profile).length,
+      reviews: Array.isArray(profile?.reviews) ? profile.reviews.length : 0,
+    };
+  }, [profile, friendCountOverride]);
+
+
 
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({
@@ -81,6 +103,21 @@ export default function Profile() {
 
     return () => { abort = true; };
   }, [authUser?._id, profile?._id]);
+
+  async function refreshProfileAfterChange() {
+    const idToReload = profile?._id || viewedUserId;
+    if (!idToReload) return;
+
+    try {
+      const res = await fetch(`/myprofile?user_id=${encodeURIComponent(idToReload)}`);
+      if (res.ok) {
+        const data = await res.json();
+        setProfile(data);
+      }
+    } catch (err) {
+      console.error("refresh profile failed", err);
+    }
+  }
 
 
 
@@ -318,14 +355,7 @@ export default function Profile() {
     return () => controller.abort();
   }, [profile?._id]);
 
-  const stats = useMemo(
-    () => ({
-      friends: Array.isArray(profile?.friends) ? profile.friends.length : 0,
-      favorites: normalizeFavorites(profile).length,
-      reviews: Array.isArray(profile?.reviews) ? profile.reviews.length : 0,
-    }),
-    [profile]
-  );
+
 
   useEffect(() => {
     if (!profile || !Array.isArray(profile.friends) || profile.friends.length === 0) {
@@ -416,6 +446,44 @@ export default function Profile() {
     }
   }
 
+  async function handleAcceptIncoming() {
+    if (!incomingRequest) return;
+
+    try {
+      setProcessingIncoming(true);
+
+      await handleAcceptRequest(incomingRequest.request_id);
+
+      // On devient amis tout de suite dans l'UI
+      setIsFriendAlready(true);
+      setIncomingRequest(null);
+      setShowIncomingMenu(false);
+
+      await refreshProfileAfterChange();
+    } finally {
+      setProcessingIncoming(false);
+    }
+  }
+
+  async function handleRefuseIncoming() {
+    if (!incomingRequest) return;
+
+    try {
+      setProcessingIncoming(true);
+
+      await handleRefuseRequest(incomingRequest.request_id);
+
+      // plus de demande en attente
+      setIncomingRequest(null);
+      setShowIncomingMenu(false);
+
+      await refreshProfileAfterChange();
+    } finally {
+      setProcessingIncoming(false);
+    }
+  }
+
+
   useEffect(() => {
     if (profile && authUser && authUser._id === profile._id) {
       setEditForm({
@@ -485,6 +553,23 @@ export default function Profile() {
       setSendingRequest(false);
     }
   }
+
+  async function refreshProfileAfterChange() {
+    const idToReload = profile?._id || viewedUserId;
+    if (!idToReload) return;
+
+    try {
+      const res = await fetch(`/myprofile?user_id=${encodeURIComponent(idToReload)}`);
+      if (res.ok) {
+        const data = await res.json();
+        setProfile(data);
+      }
+    } catch (err) {
+      console.error("refresh profile failed", err);
+    }
+  }
+
+
 
   async function handleAcceptRequest(requestId) {
     try {
@@ -577,6 +662,77 @@ export default function Profile() {
     }
   }
 
+  async function handleRemoveFriend() {
+    if (!authUser || !profile) return;
+    if (authUser._id === profile._id) return; // tu ne te vires pas toi-même
+
+    try {
+      setRemovingFriend(true);
+
+      const res = await fetch(
+        `http://localhost:5001/users/${authUser._id}/friends/${profile._id}`,
+        {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+
+      if (!res.ok) {
+        console.error("remove friend failed", res.status);
+        setRemovingFriend(false);
+        return;
+      }
+
+      // 1. UI immédiate : tu n'es plus ami
+      setIsFriendAlready(false);
+      setShowUnfriendMenu(false);
+
+      // 2. recharge propre des infos depuis l'API
+      await refreshProfileAfterChange();
+
+    } catch (err) {
+      console.error("remove friend error", err);
+    } finally {
+      setRemovingFriend(false);
+    }
+  }
+
+  async function handleRemoveFriendDirect(friendId) {
+    if (!authUser?._id || !friendId) return;
+    const confirmDelete = window.confirm("Remove this friend?");
+    if (!confirmDelete) return;
+
+    try {
+      const res = await fetch(
+        `/users/${authUser._id}/friends/${friendId}`,
+        { method: "DELETE" }
+      );
+
+      if (res.ok) {
+
+        setFriendsProfiles(prev => prev.filter(f => f._id !== friendId));
+        setFriendCountOverride(prev => {
+          if (typeof prev === "number") {
+            return Math.max(0, prev - 1);
+          }
+          const base = Array.isArray(profile?.friends)
+            ? profile.friends.length
+            : 0;
+          return Math.max(0, base - 1);
+        });
+
+        await refreshProfileAfterChange();
+      } else {
+        console.error("Failed to remove friend", await res.text());
+      }
+    } catch (err) {
+      console.error("Error removing friend:", err);
+    }
+  }
+
+
+
+
   return (
     <div className="profile-page">
       <div className="profile-container">
@@ -597,9 +753,10 @@ export default function Profile() {
               <h1>{profile.full_name || profile.username || 'Profile'}</h1>
             )}
 
-            {authUser._id === profile._id && (
-              <div className="profile-hero-actions">
-                {isEditing ? (
+            <div className="profile-hero-actions">
+              {authUser._id === profile._id ? (
+                // === TON PROPRE PROFIL ===
+                isEditing ? (
                   <>
                     <button
                       className="profile-save-button"
@@ -610,7 +767,6 @@ export default function Profile() {
                     <button
                       className="profile-cancel-button"
                       onClick={() => {
-                        // reset form to profile values and exit edit mode
                         setEditForm({
                           about_me: profile.about_me || "",
                           full_name: profile.full_name || "",
@@ -631,9 +787,104 @@ export default function Profile() {
                   >
                     ✏ Edit
                   </button>
-                )}
-              </div>
-            )}
+                )
+              ) : (
+                // === LE PROFIL DE QUELQU'UN D'AUTRE ===
+                <>
+                  {isFriendAlready ? (
+                    // bouton Friends + popover "remove friend?"
+                    <div className="friend-menu-wrapper">
+                      <button
+                        className="friend-status-button"
+                        onClick={() => setShowUnfriendMenu((v) => !v)}
+                        disabled={removingFriend}
+                      >
+                        👥 Friends
+                      </button>
+
+                      {showUnfriendMenu && (
+                        <div className="friend-menu-popover">
+                          <p className="friend-menu-text">
+                            Remove this friend?
+                          </p>
+                          <div className="friend-menu-actions">
+                            <button
+                              className="friend-remove-confirm"
+                              onClick={handleRemoveFriend}
+                              disabled={removingFriend}
+                            >
+                              {removingFriend ? "Removing..." : "Yes"}
+                            </button>
+                            <button
+                              className="friend-remove-cancel"
+                              onClick={() => setShowUnfriendMenu(false)}
+                              disabled={removingFriend}
+                            >
+                              No
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : incomingRequest ? (
+                    // L'autre t'a envoyé une demande -> popover Accept / Refuse
+                    <div className="friend-menu-wrapper">
+                      <button
+                        className="friend-pending-button"
+                        onClick={() => setShowIncomingMenu(v => !v)}
+                        disabled={processingIncoming}
+                      >
+                        ⏳ Request pending
+                      </button>
+
+                      {showIncomingMenu && (
+                        <div className="friend-menu-popover">
+                          <p className="friend-menu-text">
+                            This user sent you a friend request.
+                          </p>
+
+                          <div className="friend-menu-actions">
+                            <button
+                              className="friend-request-accept"
+                              onClick={handleAcceptIncoming}
+                              disabled={processingIncoming}
+                            >
+                              {processingIncoming ? "..." : "Accept"}
+                            </button>
+
+                            <button
+                              className="friend-request-ignore"
+                              onClick={handleRefuseIncoming}
+                              disabled={processingIncoming}
+                            >
+                              Refuse
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : requestSent ? (
+                    // tu lui as déjà envoyé une demande
+                    <button
+                      className="friend-pending-button"
+                      onClick={handleCancelRequest}
+                      disabled={sendingRequest}
+                    >
+                      {sendingRequest ? "..." : "Cancel request"}
+                    </button>
+                  ) : (
+                    // pas encore amis, pas de demande, bouton add
+                    <button
+                      className="friend-add-button"
+                      onClick={handleSendFriendRequest}
+                      disabled={sendingRequest}
+                    >
+                      {sendingRequest ? "..." : "➕ Add friend"}
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
           </div>
 
           {/* username / handle */}
@@ -775,7 +1026,6 @@ export default function Profile() {
           )}
         </section>
 
-
         {/* Stats */}
         <section>
           <div className="profile-section-header">
@@ -790,45 +1040,10 @@ export default function Profile() {
 
         {/* Favorites */}
         <section>
-          <div className="profile-section-header">
-            <h2 className="profile-section-title">Favorite Movies</h2>
-          </div>
-
-          {favorites.length === 0 ? (
-            <p className="profile-empty">No favorites yet</p>
-          ) : (
-            <div className="profile-rail">
-              {favorites.map((m) => {
-                const id = m._id || m.imdb_id;
-                const title = m.title || 'Untitled';
-                return (
-                  <div
-                    key={id || title}
-                    className="movie-card"
-                    role="button"
-                    tabIndex={0}
-                    title={title}
-                    onClick={() => id && navigate(`/movies-series/${id}`)}
-                    onKeyDown={(e) => {
-                      if ((e.key === 'Enter' || e.key === ' ') && id) {
-                        navigate(`/movies-series/${id}`);
-                      }
-                    }}
-                  >
-                    <img
-                      src={m.poster_url || FALLBACK_POSTER}
-                      alt={title}
-                      loading="lazy"
-                    />
-                    <h3>{title}</h3>
-                    <p className="movie-meta">
-                      {m.year ? m.year : 'N/A'} • {m.imdb_type || 'Unknown'}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+          <FavoritesRail
+            title="Favorite Movies"
+            items={favorites}
+          />
         </section>
 
         {/* Reviews */}
@@ -877,7 +1092,6 @@ export default function Profile() {
                 );
               })}
             </div>
-
           </section>
         )}
 
@@ -905,28 +1119,44 @@ export default function Profile() {
                   .toUpperCase();
 
                 return (
-                  <div
-                    key={id}
-                    className="friend-card"
-                    role="button"
-                    tabIndex={0}
-                    title={name}
-                    onClick={() => id && navigate(`/profile?user_id=${id}`)}
-                    onKeyDown={(e) => {
-                      if ((e.key === 'Enter' || e.key === ' ') && id) {
-                        navigate(`/profile?user_id=${id}`);
-                      }
-                    }}
-                  >
-                    <div className="friend-avatar">
-                      <span>{initials}</span>
+                  <div key={id} className="friend-card">
+                    {/* bouton supprimer visible seulement sur ton propre profil */}
+                    {authUser._id === profile._id && (
+                      <button
+                        className="friend-delete-btn"
+                        title="Remove friend"
+                        onClick={(e) => {
+                          e.stopPropagation(); // évite d'ouvrir le profil en cliquant sur la croix
+                          handleRemoveFriendDirect(id);
+                        }}
+                      >
+                        ✖
+                      </button>
+                    )}
+
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      title={name}
+                      onClick={() => id && navigate(`/profile?user_id=${id}`)}
+                      onKeyDown={(e) => {
+                        if ((e.key === 'Enter' || e.key === ' ') && id) {
+                          navigate(`/profile?user_id=${id}`);
+                        }
+                      }}
+                      className="friend-card-inner"
+                    >
+                      <div className="friend-avatar">
+                        <span>{initials}</span>
+                      </div>
+                      <h3>{name}</h3>
+                      <p className="friend-meta">
+                        {[city, country].filter(Boolean).join(', ') || '—'}
+                      </p>
                     </div>
-                    <h3>{name}</h3>
-                    <p className="friend-meta">
-                      {[city, country].filter(Boolean).join(', ') || '—'}
-                    </p>
                   </div>
                 );
+
               })}
             </div>
           )}
