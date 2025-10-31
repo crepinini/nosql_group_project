@@ -35,8 +35,9 @@ const Navbar = () => {
         <Link to="/series">Series</Link>
         <Link to="/crew">Cast &amp; Crew</Link>
         <Link to="/recommendations">Recommendations</Link>
-        <Link to="/profile">MyProfile</Link>
+        <Link to="/my-lists">MyLists</Link>
         <Link to="/friends">MyFriends</Link>
+        <Link to="/profile">MyProfile</Link>
       </nav>
       <div className="navbar__actions">
         {authUser ? (

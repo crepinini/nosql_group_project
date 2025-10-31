@@ -1,6 +1,7 @@
 import json
 import os
 import re
+from uuid import uuid4
 
 from bson import ObjectId
 from bson.errors import InvalidId
@@ -64,6 +65,184 @@ def build_cache_key(prefix, *parts):
     for part in parts:
         normalized.append(str(part) if part is not None else "")
     return ":".join(normalized)
+
+def parse_boolean(value, default=False):
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, int):
+        return value != 0
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if not normalized:
+            return default
+        return normalized in {"1", "true", "yes", "on", "public", "visible"}
+    return default if value is None else bool(value)
+
+def utc_timestamp_iso():
+    return datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
+
+def ensure_user_lists(user_doc):
+    raw_lists = user_doc.get("list") if isinstance(user_doc, dict) else None
+    mutated = False
+    normalized_lists = []
+
+    if not isinstance(raw_lists, list):
+        raw_lists = []
+        mutated = True
+
+    for entry in raw_lists:
+        if not isinstance(entry, dict):
+            mutated = True
+            continue
+
+        list_id = (entry.get("list_id") or entry.get("_id") or "").strip()
+        if not list_id:
+            list_id = f"lst_{uuid4().hex[:12]}"
+            mutated = True
+
+        name = (entry.get("name") or entry.get("title") or "").strip()
+        if not name:
+            name = "Custom List"
+            mutated = True
+
+        description = (entry.get("description") or "").strip()
+
+        list_type_raw = entry.get("type") or entry.get("list_type") or ""
+        list_type = str(list_type_raw).strip().lower()
+        if list_type not in {"movies", "people"}:
+            list_type = "movies"
+            if list_type_raw:
+                mutated = True
+        if not list_type_raw:
+            mutated = True
+
+        created_at = entry.get("created_at")
+        updated_at = entry.get("updated_at")
+        if not created_at:
+            created_at = utc_timestamp_iso()
+            mutated = True
+        if not updated_at:
+            updated_at = created_at
+            mutated = True
+
+        raw_items = entry.get("items")
+        if raw_items is None:
+            raw_items = entry.get("movies_series") or []
+            if raw_items:
+                mutated = True
+
+        normalized_items = []
+        key_name = "person_id" if list_type == "people" else "movie_id"
+        if isinstance(raw_items, list):
+            for item in raw_items:
+                entity_id = ""
+                added_at = None
+                if isinstance(item, dict):
+                    candidates = [
+                        key_name,
+                        "movie_id",
+                        "person_id",
+                        "_id",
+                        "id",
+                    ]
+                    for candidate in candidates:
+                        if candidate in item and item.get(candidate) not in (None, ""):
+                            entity_candidate = item.get(candidate)
+                            entity_id = (
+                                str(entity_candidate).strip()
+                                if not isinstance(entity_candidate, str)
+                                else entity_candidate.strip()
+                            )
+                            if entity_id:
+                                break
+                    added_at = item.get("added_at")
+                elif isinstance(item, str):
+                    entity_id = item.strip()
+                if not entity_id:
+                    mutated = True
+                    continue
+                if not added_at:
+                    added_at = utc_timestamp_iso()
+                    mutated = True
+                normalized_items.append({
+                    key_name: entity_id,
+                    "added_at": added_at,
+                })
+        else:
+            mutated = True
+
+        visibility_raw = entry.get("is_public")
+        if visibility_raw is None:
+            visibility_raw = entry.get("visibility")
+        is_public = parse_boolean(visibility_raw, default=False)
+        if visibility_raw is None and not is_public:
+            mutated = True
+
+        normalized_lists.append({
+            "list_id": list_id,
+            "name": name,
+            "description": description,
+            "items": normalized_items,
+            "created_at": created_at,
+            "updated_at": updated_at,
+            "is_public": is_public,
+            "type": list_type,
+        })
+
+    if mutated and isinstance(user_doc, dict) and user_doc.get("_id") is not None:
+        users_collection.update_one(
+            {"_id": user_doc["_id"]},
+            {"$set": {"list": normalized_lists}},
+        )
+        user_doc["list"] = normalized_lists
+
+    return normalized_lists
+
+def save_user_lists(user_doc, lists):
+    users_collection.update_one(
+        {"_id": user_doc["_id"]},
+        {"$set": {"list": lists}},
+    )
+    user_doc["list"] = lists
+    invalidate_user_cache(str(user_doc.get("_id")))
+
+def extract_friend_ids(user_doc):
+    friends_raw = user_doc.get("friends") if isinstance(user_doc, dict) else None
+    if not friends_raw:
+        return []
+
+    friend_ids = set()
+    for entry in friends_raw:
+        friend_id = None
+        if isinstance(entry, dict):
+            friend_id = (
+                entry.get("_id")
+                or entry.get("id")
+                or entry.get("user_id")
+                or entry.get("username")
+            )
+        else:
+            friend_id = entry
+
+        if not friend_id:
+            continue
+
+        try:
+            friend_ids.add(str(friend_id).strip())
+        except Exception:
+            continue
+
+    normalized = [fid for fid in friend_ids if fid]
+    return normalized
+
+def find_user_list(user_doc, list_id, lists_cache=None):
+    if not list_id:
+        return None
+    lists = lists_cache if lists_cache is not None else ensure_user_lists(user_doc)
+    for entry in lists:
+        if entry.get("list_id") == list_id:
+            return entry
+    return None
 
 
 def invalidate_user_cache(user_id):
@@ -379,6 +558,228 @@ def get_my_list():
 
     r.setex(cache_key, CACHE_TTL_SECONDS, json.dumps(favorites))
     return jsonify(favorites)
+
+@app.route("/users/<user_id>/lists", methods=["GET"])
+def get_user_lists(user_id):
+    user = find_user(user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    lists = ensure_user_lists(user)
+    return jsonify(lists)
+
+@app.route("/users/<user_id>/lists", methods=["POST"])
+def create_user_list(user_id):
+    user = find_user(user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    payload = request.get_json(silent=True) or {}
+    name = (payload.get("name") or "").strip()
+    description = (payload.get("description") or "").strip()
+    is_public = parse_boolean(payload.get("is_public"), default=False)
+    list_type = (payload.get("type") or "").strip().lower()
+    if list_type not in {"movies", "people"}:
+        list_type = "movies"
+
+    if not name:
+        return jsonify({"error": "List name is required"}), 400
+
+    lists = ensure_user_lists(user)
+    now = utc_timestamp_iso()
+    new_list = {
+        "list_id": f"lst_{uuid4().hex[:12]}",
+        "name": name,
+        "description": description,
+        "items": [],
+        "created_at": now,
+        "updated_at": now,
+        "is_public": is_public,
+        "type": list_type,
+    }
+    lists.append(new_list)
+    save_user_lists(user, lists)
+    return jsonify(new_list), 201
+
+@app.route("/users/<user_id>/friends/lists", methods=["GET"])
+def get_friend_public_lists(user_id):
+    user = find_user(user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    friend_ids = extract_friend_ids(user)
+    if not friend_ids:
+        return jsonify([])
+
+    public_payload = []
+    for friend_id in friend_ids:
+        friend_doc = find_user(friend_id)
+        if not friend_doc:
+            continue
+
+        friend_lists = ensure_user_lists(friend_doc)
+        visible_lists = []
+        for entry in friend_lists:
+            if not parse_boolean(entry.get("is_public"), default=False):
+                continue
+            visible_lists.append({
+                "list_id": entry.get("list_id"),
+                "name": entry.get("name"),
+                "description": entry.get("description"),
+                "items": entry.get("items", []),
+                "created_at": entry.get("created_at"),
+                "updated_at": entry.get("updated_at"),
+                "is_public": True,
+                "type": entry.get("type") or "movies",
+            })
+
+        if not visible_lists:
+            continue
+
+        public_payload.append({
+            "friend_id": str(friend_doc.get("_id")),
+            "friend_name": friend_doc.get("full_name") or friend_doc.get("username"),
+            "username": friend_doc.get("username"),
+            "lists": visible_lists,
+        })
+
+    return jsonify(public_payload)
+
+@app.route("/users/<user_id>/lists/<list_id>", methods=["PATCH"])
+def update_user_list(user_id, list_id):
+    user = find_user(user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    lists = ensure_user_lists(user)
+    target = find_user_list(user, list_id, lists_cache=lists)
+    if not target:
+        return jsonify({"error": "List not found"}), 404
+
+    payload = request.get_json(silent=True) or {}
+    updated = False
+
+    if "name" in payload:
+        name = (payload.get("name") or "").strip()
+        if not name:
+            return jsonify({"error": "List name cannot be empty"}), 400
+        target["name"] = name
+        updated = True
+    if "description" in payload:
+        description = (payload.get("description") or "").strip()
+        target["description"] = description
+        updated = True
+    if "is_public" in payload:
+        target["is_public"] = parse_boolean(
+            payload.get("is_public"),
+            default=target.get("is_public", False)
+        )
+        updated = True
+
+    if not updated:
+        return jsonify({"error": "No valid fields to update"}), 400
+
+    target["updated_at"] = utc_timestamp_iso()
+    save_user_lists(user, lists)
+    return jsonify(target)
+
+@app.route("/users/<user_id>/lists/<list_id>", methods=["DELETE"])
+def delete_user_list(user_id, list_id):
+    user = find_user(user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    lists = ensure_user_lists(user)
+    new_lists = [entry for entry in lists if entry.get("list_id") != list_id]
+    if len(new_lists) == len(lists):
+        return jsonify({"error": "List not found"}), 404
+
+    save_user_lists(user, new_lists)
+    return jsonify({"status": "deleted"})
+
+@app.route("/users/<user_id>/lists/<list_id>/items", methods=["POST"])
+def add_list_item(user_id, list_id):
+    user = find_user(user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    lists = ensure_user_lists(user)
+    target = find_user_list(user, list_id, lists_cache=lists)
+    if not target:
+        return jsonify({"error": "List not found"}), 404
+
+    payload = request.get_json(silent=True) or {}
+    list_type = str(target.get("type") or "movies").strip().lower()
+    if list_type not in {"movies", "people"}:
+        list_type = "movies"
+
+    if list_type == "people":
+        raw_id = (
+            payload.get("person_id")
+            or payload.get("personId")
+            or payload.get("id")
+            or ""
+        )
+        key_name = "person_id"
+        missing_error = "person_id is required"
+    else:
+        raw_id = (
+            payload.get("movie_id")
+            or payload.get("movieId")
+            or payload.get("id")
+            or ""
+        )
+        key_name = "movie_id"
+        missing_error = "movie_id is required"
+
+    item_id = str(raw_id).strip()
+    if not item_id:
+        return jsonify({"error": missing_error}), 400
+
+    already_present = any(
+        item.get(key_name) == item_id for item in target.get("items", [])
+    )
+    if already_present:
+        return jsonify(target)
+
+    now = utc_timestamp_iso()
+    target.setdefault("items", []).append({
+        key_name: item_id,
+        "added_at": now,
+    })
+    target["updated_at"] = now
+    save_user_lists(user, lists)
+    return jsonify(target), 201
+
+@app.route("/users/<user_id>/lists/<list_id>/items/<movie_id>", methods=["DELETE"])
+def remove_list_item(user_id, list_id, movie_id):
+    user = find_user(user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    lists = ensure_user_lists(user)
+    target = find_user_list(user, list_id, lists_cache=lists)
+    if not target:
+        return jsonify({"error": "List not found"}), 404
+
+    list_type = str(target.get("type") or "movies").strip().lower()
+    if list_type not in {"movies", "people"}:
+        list_type = "movies"
+    key_name = "person_id" if list_type == "people" else "movie_id"
+
+    item_id = (movie_id or "").strip()
+    if not item_id:
+        error_label = "person_id" if list_type == "people" else "movie_id"
+        return jsonify({"error": f"{error_label} is required"}), 400
+
+    items = target.get("items") or []
+    new_items = [item for item in items if item.get(key_name) != item_id]
+    if len(new_items) == len(items):
+        return jsonify({"error": "Item not found in list"}), 404
+
+    target["items"] = new_items
+    target["updated_at"] = utc_timestamp_iso()
+    save_user_lists(user, lists)
+    return jsonify(target)
 
 @app.route("/users/<user_id>/favorites", methods=["POST"])
 def update_user_favorites(user_id):
