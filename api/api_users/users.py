@@ -308,7 +308,7 @@ def list_users():
 
     query = {}
     if search:
-        regex = {"$regex": search, "$options": "i"}
+        regex = {"$regex": f"^{search}", "$options": "i"}
         query = {"$or": [{"username": regex}, {"full_name": regex}]}
 
     cursor = users_collection.find(query)

@@ -8,6 +8,7 @@ import ActorDetailPage from './pages/ActorDetailPage';
 import MovieDetailPage from './pages/MovieDetailPage';
 import RecommendationsPage from './pages/RecommendationsPage';
 import MyListPage from './pages/MyListPage';
+import Friends from './pages/Friends';
 import Home from './components/Home';
 import Login from './components/Login';
 import './App.css';
@@ -41,6 +42,7 @@ function App() {
             <Route path="/recommendations" element={<RecommendationsPage />} />
             <Route path="/my-lists" element={<MyListPage />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/friends" element={<Friends />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </main>
