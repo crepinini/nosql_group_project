@@ -13,9 +13,9 @@
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  max-width: 420px;
+  max-width: 520px;
   padding: 2.5rem 3rem;
-  width: min(100%, 420px);
+  width: min(100%, 520px);
 }
 
 .login__title {
@@ -32,6 +32,43 @@
   line-height: 1.6;
   margin: 0;
   text-align: center;
+}
+
+.login__toggle {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+.login__toggle-btn {
+  background: transparent;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 999px;
+  color: rgba(226, 232, 240, 0.75);
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 0.55rem 1.25rem;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.login__toggle-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.login__toggle-btn:not(:disabled):hover,
+.login__toggle-btn:not(:disabled):focus-visible {
+  border-color: rgba(56, 189, 248, 0.65);
+  color: #f8fafc;
+  outline: none;
+}
+
+.login__toggle-btn--active {
+  background: rgba(56, 189, 248, 0.16);
+  border-color: rgba(56, 189, 248, 0.65);
+  color: #f8fafc;
 }
 
 .login__form {
@@ -61,6 +98,25 @@
 }
 
 .login__field input:focus-visible {
+  border-color: rgba(56, 189, 248, 0.75);
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.25);
+  outline: none;
+}
+
+.login__field textarea {
+  background: rgba(10, 14, 28, 0.88);
+  border: 1px solid rgba(148, 163, 184, 0.32);
+  border-radius: 14px;
+  color: #f8fafc;
+  font-family: inherit;
+  font-size: 1rem;
+  min-height: 88px;
+  padding: 0.75rem 1rem;
+  resize: vertical;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.login__field textarea:focus-visible {
   border-color: rgba(56, 189, 248, 0.75);
   box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.25);
   outline: none;
@@ -103,5 +159,13 @@
 @media (max-width: 640px) {
   .login__card {
     padding: 2rem;
+  }
+
+  .login__toggle {
+    flex-direction: column;
+  }
+
+  .login__toggle-btn {
+    width: 100%;
   }
 }

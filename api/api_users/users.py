@@ -1,11 +1,12 @@
 import json
 import os
+import re
 
 from bson import ObjectId
 from bson.errors import InvalidId
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-from pymongo import MongoClient
+from pymongo import DESCENDING, MongoClient
 import redis
 from datetime import datetime
 
@@ -28,6 +29,24 @@ r = redis.Redis(
 )
 
 CACHE_TTL_SECONDS = int(os.environ.get("CACHE_TTL_SECONDS", 60))
+
+
+def generate_next_user_id():
+    latest_user = users_collection.find_one(
+        {"_id": {"$regex": r"^u\d{12}$"}},
+        sort=[("_id", DESCENDING)],
+        projection={"_id": 1},
+    )
+    if not latest_user:
+        return "u000000000001"
+
+    raw_identifier = str(latest_user.get("_id", "")).strip()
+    try:
+        numeric = int(raw_identifier[1:])
+    except (ValueError, TypeError):
+        numeric = 0
+
+    return f"u{numeric + 1:012d}"
 
 
 def serialize_document(document):
@@ -59,6 +78,14 @@ def invalidate_user_cache(user_id):
             r.delete(key)
         except redis.RedisError:
             continue
+
+
+def invalidate_user_list_cache():
+    try:
+        for key in r.scan_iter("users:*"):
+            r.delete(key)
+    except redis.RedisError:
+        pass
 
 
 def find_user(identifier, projection=None):
@@ -170,17 +197,89 @@ def create_user():
     payload = request.get_json(silent=True) or {}
     username = (payload.get("username") or "").strip()
     password = payload.get("password") or ""
-    existing_user = users_collection.find_one({"username": username})
-    if existing_user:
-        return jsonify({"error": "Username already exists. Please choose another username"})
-    new_user = {
+    email = (payload.get("email") or "").strip()
+    first_name = (payload.get("first_name") or "").strip()
+    last_name = (payload.get("last_name") or "").strip()
+    location_city = (payload.get("location_city") or "").strip()
+    location_country = (payload.get("location_country") or "").strip()
+    birthdate = (payload.get("birthdate") or "").strip()
+    about_me = (payload.get("about_me") or "").strip()
+
+    required_fields = {
         "username": username,
         "password": password,
+        "email": email,
+        "first_name": first_name,
+        "last_name": last_name,
+        "location_city": location_city,
+        "location_country": location_country,
+        "birthdate": birthdate,
     }
+
+    missing = [field for field, value in required_fields.items() if not value]
+    if missing:
+        message = f"Missing required fields: {', '.join(missing)}"
+        return jsonify({"error": message}), 400
+
+    try:
+        birthdate_obj = datetime.strptime(birthdate, "%Y-%m-%d").date()
+    except ValueError:
+        return jsonify({"error": "Invalid birthdate format. Please use YYYY-MM-DD."}), 400
+
+    min_year = 1920
+    current_year = datetime.utcnow().year
+    if birthdate_obj.year < min_year or birthdate_obj.year > current_year:
+        return jsonify({"error": f"Birth date must be between {min_year} and {current_year}."}), 400
+    if birthdate_obj > datetime.utcnow().date():
+        return jsonify({"error": "Birth date cannot be in the future."}), 400
+
+    username_regex = {"$regex": f"^{re.escape(username)}$", "$options": "i"}
+    existing_user = users_collection.find_one({"username": username_regex})
+    if existing_user:
+        return jsonify({"error": "Username already exists. Please choose another username"}), 409
+
+    email_regex = {"$regex": f"^{re.escape(email)}$", "$options": "i"}
+    existing_email = users_collection.find_one({"email": email_regex})
+    if existing_email:
+        return jsonify({"error": "Email already exists. Please sign in or use a different email"}), 409
+
+    full_name = f"{first_name} {last_name}".strip()
+    member_since = datetime.utcnow().date().isoformat()
+
+    new_user = {
+        "_id": generate_next_user_id(),
+        "username": username,
+        "password": password,
+        "email": email,
+        "first_name": first_name,
+        "last_name": last_name,
+        "full_name": full_name or username,
+        "member_since": member_since,
+        "birthdate": birthdate,
+        "location_city": location_city,
+        "location_country": location_country,
+        "about_me": about_me,
+        "favorites_movies": [],
+        "favorites_people": [],
+        "reviews": [],
+        "friends": [],
+        "friend_requests": [],
+        "list": [],
+        "stats": {
+            "total_favorites": 0,
+            "total_reviews": 0,
+            "friends_count": 0,
+        },
+        "movie_ratings": {},
+        "movie_comments": {},
+        "watch_statuses": {},
+    }
+
     result = users_collection.insert_one(new_user)
-    created_user = users_collection.find_one({"_id": result.inserted_id})
+    created_user = users_collection.find_one({"_id": new_user["_id"]})
+    invalidate_user_list_cache()
     serialized = serialize_document(created_user)
-    return jsonify(serialized)
+    return jsonify(serialized), 201
 
 @app.route("/auth/delete/<user_id>", methods=["DELETE"])
 def delete_user(user_id):
