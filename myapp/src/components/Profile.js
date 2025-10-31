@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Navigate, useNavigate, useLocation } from 'react-router-dom';
-import { getStoredUser } from './Login/auth';
+import { getStoredUser, storeUser } from './Login/auth';
+
 import './Profile.css';
 
 const FALLBACK_POSTER =
@@ -34,12 +35,21 @@ export default function Profile() {
   // Friend requests
   const [friendRequests, setFriendRequests] = useState([]);
   const [showRequests, setShowRequests] = useState(false);
-  // Friend requests UI state for the "Add friend" button
+
   const [isFriendAlready, setIsFriendAlready] = useState(false);
   const [requestSent, setRequestSent] = useState(false);
   const [sendingRequest, setSendingRequest] = useState(false);
   const [pendingRequests, setPendingRequests] = useState([]);
   const [incomingRequest, setIncomingRequest] = useState(null);
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({
+    about_me: "",
+    full_name: "",
+    password: "",
+    location_city: "",
+    location_country: ""
+  });
 
 
 
@@ -373,6 +383,51 @@ export default function Profile() {
     }
   }, [profile, authUser]);
 
+  async function handleSaveProfile() {
+    try {
+      const payload = { ...editForm };
+      if (!payload.password || payload.password.trim() === "") {
+        delete payload.password;
+      }
+
+      const res = await fetch(`http://localhost:5001/myprofile/${authUser._id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        console.error("update failed", res.status);
+        return;
+      }
+
+      const updatedFromServer = await res.json();
+      setProfile(updatedFromServer);
+      const mergedUser = {
+        ...authUser,
+        ...updatedFromServer,
+      };
+
+      storeUser(mergedUser);
+      setIsEditing(false);
+
+    } catch (err) {
+      console.error("update error", err);
+    }
+  }
+
+  useEffect(() => {
+    if (profile && authUser && authUser._id === profile._id) {
+      setEditForm({
+        about_me: profile.about_me || "",
+        full_name: profile.full_name || "",
+        password: "",
+        location_city: profile.location_city || "",
+        location_country: profile.location_country || ""
+      });
+    }
+  }, [profile?._id]);
+
 
 
   // Guards
@@ -524,270 +579,359 @@ export default function Profile() {
 
   return (
     <div className="profile-page">
-      {/* Banner */}
-      <section className="profile-hero">
-        <h1>{profile.full_name || profile.username || 'Profile'}</h1>
+      <div className="profile-container">
+        {/* Banner */}
+        <section className="profile-hero">
+          {/* top row: name + action buttons */}
+          <div className="profile-hero-header">
+            {isEditing ? (
+              <input
+                className="profile-edit-input profile-edit-name"
+                type="text"
+                value={editForm.full_name}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, full_name: e.target.value })
+                }
+              />
+            ) : (
+              <h1>{profile.full_name || profile.username || 'Profile'}</h1>
+            )}
 
-        {profile.username && (
-          <div className="profile-handle">@{profile.username}</div>
-        )}
+            {authUser._id === profile._id && (
+              <div className="profile-hero-actions">
+                {isEditing ? (
+                  <>
+                    <button
+                      className="profile-save-button"
+                      onClick={handleSaveProfile}
+                    >
+                      💾 Save
+                    </button>
+                    <button
+                      className="profile-cancel-button"
+                      onClick={() => {
+                        // reset form to profile values and exit edit mode
+                        setEditForm({
+                          about_me: profile.about_me || "",
+                          full_name: profile.full_name || "",
+                          password: "",
+                          location_city: profile.location_city || "",
+                          location_country: profile.location_country || ""
+                        });
+                        setIsEditing(false);
+                      }}
+                    >
+                      ✖ Cancel
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    className="profile-edit-button"
+                    onClick={() => setIsEditing(true)}
+                  >
+                    ✏ Edit
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
 
-        {profile.about_me && (
-          <p className="profile-about">{profile.about_me}</p>
-        )}
-
-        <div className="profile-meta">
-          {profile.birthdate && <span>📅 {profile.birthdate}</span>}
-          {(profile.location_city || profile.location_country) && (
-            <span>
-              📍 {[
-                profile.location_city,
-                profile.location_country,
-              ]
-                .filter(Boolean)
-                .join(', ')}
-            </span>
+          {/* username / handle */}
+          {profile.username && (
+            <div className="profile-handle">@{profile.username}</div>
           )}
-        </div>
 
-        <div className="friend-action-wrapper">
-          {authUser?._id === profile._id && (
-            <div className="friend-requests-container">
-              <button
-                className="friend-requests-button"
-                onClick={() => setShowRequests(!showRequests)}
-              >
-                👥 Friend Requests ({friendRequests.length})
-              </button>
+          {/* about_me */}
+          <div className="profile-about">
+            {isEditing ? (
+              <textarea
+                className="profile-edit-textarea"
+                value={editForm.about_me}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, about_me: e.target.value })
+                }
+                rows={3}
+              />
+            ) : (
+              profile.about_me || ""
+            )}
+          </div>
 
-              {showRequests && (
-                <div className="friend-requests-popup">
-                  {friendRequests.length === 0 ? (
-                    <p>No pending requests</p>
-                  ) : (
-                    friendRequests.map((req) => (
-                      <li key={req.request_id} className="friend-requests-item">
-                        <div className="friend-request-header">
-                          <button
-                            className="friend-request-link"
-                            onClick={() => {
-                              navigate(`/profile?user_id=${req.from_user}`);
-                            }}
-                          >
-                            {req.from_full_name || req.from_username || 'Unknown User'}
-                          </button>
-
-                          <div className="friend-request-actions">
-                            <button
-                              className="friend-request-accept"
-                              onClick={() => handleAcceptRequest(req.request_id)}
-                            >
-                              Accept
-                            </button>
-
-                            <button
-                              className="friend-request-ignore"
-                              onClick={() => handleRefuseRequest(req.request_id)}
-                            >
-                              Refuse
-                            </button>
-
-                          </div>
-                        </div>
-                      </li>
-
-                    ))
-                  )}
-                </div>
-              )}
+          {/* password field (only visible in edit mode, never in view mode) */}
+          {isEditing && (
+            <div className="profile-password-row">
+              <label className="profile-password-label">
+                New password:
+              </label>
+              <input
+                className="profile-edit-input"
+                type="password"
+                placeholder="•••••••"
+                value={editForm.password}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, password: e.target.value })
+                }
+              />
             </div>
           )}
 
-          {/* Displayed on other users' profiles */}
-          {authUser?._id !== profile._id && (
-            <>
-              {isFriendAlready ? (
-                <div className="friend-status-badge">✓ Friends</div>
-              ) : incomingRequest ? (
-                // cette personne t'a envoyé une demande
-                <div className="incoming-request-actions">
-                  <div className="incoming-request-label">
-                    {profile.full_name || profile.username || 'This user'} wants to be your friend
-                  </div>
+          {/* meta: birthdate / location */}
+          <div className="profile-meta">
+            {profile.birthdate && (
+              <span>
+                📅 {profile.birthdate}
+              </span>
+            )}
 
-                  <div className="incoming-request-buttons">
-                    <button
-                      className="friend-request-accept"
-                      onClick={() => handleAcceptRequest(incomingRequest.request_id)}
-                    >
-                      Accept
-                    </button>
-
-                    <button
-                      className="friend-request-ignore"
-                      onClick={() => handleRefuseRequest(incomingRequest.request_id)}
-                    >
-                      Refuse
-                    </button>
-
-                  </div>
-                </div>
-              ) : requestSent ? (
-                <div className="friend-status-badge pending">
-                  Request sent
-                  <button
-                    className="cancel-request-button"
-                    onClick={handleCancelRequest}
-                  >
-                    Cancel
-                  </button>
-                </div>
-
-              ) : (
-                <button
-                  className="add-friend-button"
-                  disabled={sendingRequest}
-                  onClick={handleSendFriendRequest}
-                >
-                  {sendingRequest ? 'Sending…' : 'Add friend'}
-                </button>
-              )}
-            </>
-          )}
-
-        </div>
-      </section>
-
-
-      {/* Stats */}
-      <section>
-        <div className="profile-section-header">
-          <h2 className="profile-section-title">Statistics</h2>
-        </div>
-        <div className="stat-pills">
-          <span className="stat-pill">friends: {stats.friends}</span>
-          <span className="stat-pill">favorites: {stats.favorites}</span>
-          <span className="stat-pill">reviews: {stats.reviews}</span>
-        </div>
-      </section>
-
-      {/* Favorites */}
-      <section>
-        <div className="profile-section-header">
-          <h2 className="profile-section-title">Favorite Movies</h2>
-        </div>
-
-        {favorites.length === 0 ? (
-          <p className="profile-empty">No favorites yet</p>
-        ) : (
-          <div className="profile-rail">
-            {favorites.map((m) => {
-              const id = m._id || m.imdb_id;
-              const title = m.title || 'Untitled';
-              return (
-                <div
-                  key={id || title}
-                  className="movie-card"
-                  role="button"
-                  tabIndex={0}
-                  title={title}
-                  onClick={() => id && navigate(`/movies-series/${id}`)}
-                  onKeyDown={(e) => {
-                    if ((e.key === 'Enter' || e.key === ' ') && id) {
-                      navigate(`/movies-series/${id}`);
+            <span>
+              📍{" "}
+              {isEditing ? (
+                <>
+                  <input
+                    className="profile-edit-input profile-edit-location"
+                    type="text"
+                    placeholder="City"
+                    value={editForm.location_city}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, location_city: e.target.value })
                     }
-                  }}
-                >
-                  <img
-                    src={m.poster_url || FALLBACK_POSTER}
-                    alt={title}
-                    loading="lazy"
                   />
-                  <h3>{title}</h3>
-                  <p className="movie-meta">
-                    {m.year ? m.year : 'N/A'} • {m.imdb_type || 'Unknown'}
-                  </p>
-                </div>
-              );
-            })}
+                  ,{" "}
+                  <input
+                    className="profile-edit-input profile-edit-location"
+                    type="text"
+                    placeholder="Country"
+                    value={editForm.location_country}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, location_country: e.target.value })
+                    }
+                  />
+                </>
+              ) : (
+                [profile.location_city, profile.location_country]
+                  .filter(Boolean)
+                  .join(', ') || "—"
+              )}
+            </span>
           </div>
-        )}
-      </section>
 
-      {/* Reviews */}
-      {reviewsEnriched.length > 0 && (
-        <section>
-          <div className="profile-section-header">
-            <h2 className="profile-section-title">Reviews</h2>
-          </div>
-          <div className="review-grid">
-            {reviewsEnriched.map((r, i) => (
-              <div key={r._id || i} className="review-card">
-                <div style={{ fontWeight: 600 }}>
-                  {r.movie_title || 'Untitled Movie'}
-                </div>
-                <p style={{ marginTop: '.5rem' }}>{r.review_text}</p>
-                {r.date_posted && (
-                  <div style={{ opacity: 0.85, marginTop: '.5rem' }}>
-                    <em>{r.date_posted}</em>
+          {/* Friend Requests button (seulement si c'est toi) */}
+          {authUser?._id === profile._id && (
+            <div className="friend-action-wrapper">
+              <div className="friend-requests-container">
+                <button
+                  className="friend-requests-button"
+                  onClick={() => setShowRequests(!showRequests)}
+                >
+                  👥 Friend Requests ({friendRequests.length})
+                </button>
+
+                {showRequests && (
+                  <div className="friend-requests-popup">
+                    {friendRequests.length === 0 ? (
+                      <p>No pending requests</p>
+                    ) : (
+                      friendRequests.map((req) => (
+                        <li key={req.request_id} className="friend-requests-item">
+                          <div className="friend-request-header">
+                            <button
+                              className="friend-request-link"
+                              onClick={() => {
+                                navigate(`/profile?user_id=${req.from_user}`);
+                              }}
+                            >
+                              {req.from_full_name ||
+                                req.from_username ||
+                                'Unknown User'}
+                            </button>
+
+                            <div className="friend-request-actions">
+                              <button
+                                className="friend-request-accept"
+                                onClick={() =>
+                                  handleAcceptRequest(req.request_id)
+                                }
+                              >
+                                Accept
+                              </button>
+
+                              <button
+                                className="friend-request-ignore"
+                                onClick={() =>
+                                  handleRefuseRequest(req.request_id)
+                                }
+                              >
+                                Refuse
+                              </button>
+                            </div>
+                          </div>
+                        </li>
+                      ))
+                    )}
                   </div>
                 )}
               </div>
-            ))}
+            </div>
+          )}
+        </section>
+
+
+        {/* Stats */}
+        <section>
+          <div className="profile-section-header">
+            <h2 className="profile-section-title">Statistics</h2>
+          </div>
+          <div className="stat-pills">
+            <span className="stat-pill">friends: {stats.friends}</span>
+            <span className="stat-pill">favorites: {stats.favorites}</span>
+            <span className="stat-pill">reviews: {stats.reviews}</span>
           </div>
         </section>
-      )}
 
-      {/* Friends */}
-      <section>
-        <div className="profile-section-header">
-          <h2 className="profile-section-title">Friends</h2>
-        </div>
-
-        {friendsProfiles.length === 0 ? (
-          <p className="profile-empty">No friends yet</p>
-        ) : (
-          <div className="friends-rail">
-            {friendsProfiles.map((friend) => {
-              const id = friend._id || friend.imdb_user_id;
-              const name =
-                friend.full_name || friend.username || 'Unknown User';
-              const city = friend.location_city || '';
-              const country = friend.location_country || '';
-              const initials = name
-                .split(' ')
-                .map((n) => n[0])
-                .join('')
-                .slice(0, 2)
-                .toUpperCase();
-
-              return (
-                <div
-                  key={id}
-                  className="friend-card"
-                  role="button"
-                  tabIndex={0}
-                  title={name}
-                  onClick={() => id && navigate(`/profile?user_id=${id}`)}
-                  onKeyDown={(e) => {
-                    if ((e.key === 'Enter' || e.key === ' ') && id) {
-                      navigate(`/profile?user_id=${id}`);
-                    }
-                  }}
-                >
-                  <div className="friend-avatar">
-                    <span>{initials}</span>
-                  </div>
-                  <h3>{name}</h3>
-                  <p className="friend-meta">
-                    {[city, country].filter(Boolean).join(', ') || '—'}
-                  </p>
-                </div>
-              );
-            })}
+        {/* Favorites */}
+        <section>
+          <div className="profile-section-header">
+            <h2 className="profile-section-title">Favorite Movies</h2>
           </div>
+
+          {favorites.length === 0 ? (
+            <p className="profile-empty">No favorites yet</p>
+          ) : (
+            <div className="profile-rail">
+              {favorites.map((m) => {
+                const id = m._id || m.imdb_id;
+                const title = m.title || 'Untitled';
+                return (
+                  <div
+                    key={id || title}
+                    className="movie-card"
+                    role="button"
+                    tabIndex={0}
+                    title={title}
+                    onClick={() => id && navigate(`/movies-series/${id}`)}
+                    onKeyDown={(e) => {
+                      if ((e.key === 'Enter' || e.key === ' ') && id) {
+                        navigate(`/movies-series/${id}`);
+                      }
+                    }}
+                  >
+                    <img
+                      src={m.poster_url || FALLBACK_POSTER}
+                      alt={title}
+                      loading="lazy"
+                    />
+                    <h3>{title}</h3>
+                    <p className="movie-meta">
+                      {m.year ? m.year : 'N/A'} • {m.imdb_type || 'Unknown'}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+
+        {/* Reviews */}
+        {reviewsEnriched.length > 0 && (
+          <section>
+            <div className="profile-section-header">
+              <h2 className="profile-section-title">Reviews</h2>
+            </div>
+            <div className="review-grid">
+              {reviewsEnriched.map((r, i) => {
+                const movieId = r.movie_id || r._id || r.imdb_id;
+
+                return (
+                  <div
+                    key={r._id || i}
+                    className="review-card"
+                    role="button"
+                    tabIndex={0}
+                    title={r.movie_title || 'Untitled Movie'}
+                    onClick={() => {
+                      if (authUser?._id === profile._id && movieId) {
+                        navigate(`/movies-series/${encodeURIComponent(movieId)}`);
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (
+                        authUser?._id === profile._id &&
+                        (e.key === 'Enter' || e.key === ' ') &&
+                        movieId
+                      ) {
+                        navigate(`/movies-series/${encodeURIComponent(movieId)}`);
+                      }
+                    }}
+                    style={{ cursor: authUser?._id === profile._id ? 'pointer' : 'default' }}
+                  >
+                    <div style={{ fontWeight: 600 }}>
+                      {r.movie_title || 'Untitled Movie'}
+                    </div>
+                    <p style={{ marginTop: '.5rem' }}>{r.review_text}</p>
+                    {r.date_posted && (
+                      <div style={{ opacity: 0.85, marginTop: '.5rem' }}>
+                        <em>{r.date_posted}</em>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+          </section>
         )}
-      </section>
+
+        {/* Friends */}
+        <section>
+          <div className="profile-section-header">
+            <h2 className="profile-section-title">Friends</h2>
+          </div>
+
+          {friendsProfiles.length === 0 ? (
+            <p className="profile-empty">No friends yet</p>
+          ) : (
+            <div className="friends-rail">
+              {friendsProfiles.map((friend) => {
+                const id = friend._id || friend.imdb_user_id;
+                const name =
+                  friend.full_name || friend.username || 'Unknown User';
+                const city = friend.location_city || '';
+                const country = friend.location_country || '';
+                const initials = name
+                  .split(' ')
+                  .map((n) => n[0])
+                  .join('')
+                  .slice(0, 2)
+                  .toUpperCase();
+
+                return (
+                  <div
+                    key={id}
+                    className="friend-card"
+                    role="button"
+                    tabIndex={0}
+                    title={name}
+                    onClick={() => id && navigate(`/profile?user_id=${id}`)}
+                    onKeyDown={(e) => {
+                      if ((e.key === 'Enter' || e.key === ' ') && id) {
+                        navigate(`/profile?user_id=${id}`);
+                      }
+                    }}
+                  >
+                    <div className="friend-avatar">
+                      <span>{initials}</span>
+                    </div>
+                    <h3>{name}</h3>
+                    <p className="friend-meta">
+                      {[city, country].filter(Boolean).join(', ') || '—'}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      </div>
     </div>
   );
 }
