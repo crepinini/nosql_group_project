@@ -605,3 +605,62 @@
   color: #fff;
   transform: scale(1.1);
 }
+ 
+.recommendation-rail__header h2 {
+  color: #00b4d8 !important;
+}
+
+.stat-pills {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+  margin-bottom: 1.4rem; 
+}
+
+.profile-section-title {
+  font-size: 1.6rem;
+  color: #00b4d8;
+  margin: 0 0 1rem 0;
+  text-align: left;
+}
+
+.recommendation-rail__header {
+  margin-bottom: 1rem;
+}
+
+.profile-container > section {
+  margin-top: 2.4rem; 
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.profile-container > section:first-of-type {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+.profile-section-header {
+  margin-bottom: 1rem;
+}
+
+.stat-pills {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+  margin-bottom: 1.6rem;
+}
+
+
+.profile-hero-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding-top: 0.6rem; 
+}
+
+.profile-hero-header h1 {
+  margin-top: 0.2rem;
+}

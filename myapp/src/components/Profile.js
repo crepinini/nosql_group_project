@@ -53,14 +53,34 @@ export default function Profile() {
     const baseFriends = Array.isArray(profile?.friends)
       ? profile.friends.length
       : 0;
+    const friendsCount =
+      friendCountOverride !== null ? friendCountOverride : baseFriends;
+    const favoritesCount = normalizeFavorites(profile).length;
+    const reviewsCount = Array.isArray(profile?.reviews)
+      ? profile.reviews.length
+      : 0;
+    const statuses = profile?.watch_statuses || {};
+    let watchedCount = 0;
+    let planningCount = 0;
+
+    for (const movieId in statuses) {
+      const st = statuses[movieId];
+      if (st === "watched") {
+        watchedCount += 1;
+      } else if (st === "plan") {
+        planningCount += 1;
+      }
+    }
 
     return {
-      friends:
-        friendCountOverride !== null ? friendCountOverride : baseFriends,
-      favorites: normalizeFavorites(profile).length,
-      reviews: Array.isArray(profile?.reviews) ? profile.reviews.length : 0,
+      friends: friendsCount,
+      favorites: favoritesCount,
+      reviews: reviewsCount,
+      watched: watchedCount,
+      planning: planningCount,
     };
   }, [profile, friendCountOverride]);
+
 
 
 
@@ -1032,10 +1052,27 @@ export default function Profile() {
             <h2 className="profile-section-title">Statistics</h2>
           </div>
           <div className="stat-pills">
-            <span className="stat-pill">friends: {stats.friends}</span>
-            <span className="stat-pill">favorites: {stats.favorites}</span>
-            <span className="stat-pill">reviews: {stats.reviews}</span>
+            <span className="stat-pill">
+              friends: {stats.friends}
+            </span>
+
+            <span className="stat-pill">
+              favorites: {stats.favorites}
+            </span>
+
+            <span className="stat-pill">
+              reviews: {stats.reviews}
+            </span>
+
+            <span className="stat-pill">
+              watched: {stats.watched}
+            </span>
+
+            <span className="stat-pill">
+              planning to watch: {stats.planning}
+            </span>
           </div>
+
         </section>
 
         {/* Favorites */}
