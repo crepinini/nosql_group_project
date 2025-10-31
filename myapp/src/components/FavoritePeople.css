@@ -1,0 +1,198 @@
+/* BASE LAYOUT: on repart du même squelette que MoviePeople.css
+   mais adapté au style du profil utilisateur */
+
+/* Le container global de la section */
+.movie-people {
+  /* si tu veux le look BOÎTE ARRONDIE comme sur ton screenshot,
+     garde ces lignes; sinon commente-les (voir note plus bas) */
+  background: rgba(16, 15, 23, 0.4);
+  border-radius: 16px;
+  box-shadow: 0 16px 32px rgba(0,0,0,0.6);
+  border: 1px solid rgba(255,255,255,0.07);
+
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 1.5rem 1.5rem 1.75rem;
+  position: relative;
+}
+
+/* halo bleu léger dans le coin haut droit, comme ton hero */
+.movie-people::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: 16px;
+  background: radial-gradient(circle at top right, rgba(0,180,216,0.22), transparent 70%);
+}
+.movie-people > * {
+  position: relative;
+  z-index: 2;
+}
+
+/* HEADER (titre "Favorite Crew & Cast" + sous-texte) */
+.movie-people__header h2 {
+  margin: 0;
+  font-size: 1.55rem;
+  color: #00b4d8;              /* même bleu que le reste du profil */
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.movie-people__header p {
+  margin: 0.35rem 0 0;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  color: rgba(0,180,216,0.75); /* bleu clair translucide */
+  font-weight: 400;
+}
+
+/* message "loading", "error", etc */
+.movie-people__status {
+  background: rgba(12,16,30,0.9);
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.07);
+  box-shadow: 0 16px 32px rgba(0,0,0,0.6);
+  padding: 1rem 1.5rem;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: rgba(255,255,255,0.8);
+}
+
+.movie-people__status--error {
+  border-color: rgba(239,68,68,0.5);
+  background: rgba(239,68,68,0.15);
+  color: #fecaca;
+  box-shadow: 0 16px 32px rgba(0,0,0,0.8);
+}
+
+/* SOUS-TITRE DE SECTION ("PEOPLE YOU FOLLOW") */
+.movie-people__group {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.movie-people__group-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: #00b4d8;              /* BLEU DU PROFIL ICI */
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+/* LE RAIL HORIZONTAL */
+.movie-people__list {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(160px, 1fr);
+  gap: 1.25rem;
+  overflow-x: auto;
+  padding-bottom: 0.75rem;
+  scroll-snap-type: x mandatory;
+}
+
+.movie-people__list::-webkit-scrollbar {
+  height: 6px;
+  background: rgba(0,0,0,0);
+}
+
+.movie-people__list::-webkit-scrollbar-thumb {
+  background: rgba(0,180,216,0.4); /* barre scroll bleutée */
+  border-radius: 999px;
+  border: 1px solid rgba(0,0,0,0.4);
+}
+
+/* LES CARTES INDIVIDUELLES (chaque personne) */
+.movie-people__item {
+  background: rgba(12,16,30,0.9);
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.07);
+  box-shadow: 0 16px 32px rgba(0,0,0,0.6);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 1.25rem 1.1rem;
+  text-align: center;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  scroll-snap-align: center;
+  min-height: 220px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  line-height: 1.35;
+}
+
+.movie-people__item:hover,
+.movie-people__item:focus-visible {
+  background: rgba(9,15,25,0.95);
+  border-color: rgba(0,180,216,0.45);
+  box-shadow: 0 24px 40px rgba(0,180,216,0.4);
+  transform: translateY(-4px);
+  outline: none;
+}
+
+/* AVATAR ROND */
+.movie-people__avatar {
+  background: radial-gradient(
+      circle at top left,
+      rgba(0,180,216,0.4),
+      rgba(2,48,71,0.7)
+    ),
+    rgba(3,7,18,0.9);
+  border-radius: 50%;
+  height: 104px;
+  width: 104px;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 16px 32px rgba(0,0,0,0.6);
+  border: 1px solid rgba(255,255,255,0.12);
+}
+
+.movie-people__avatar img {
+  border-radius: 50%;
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+}
+
+/* NOM DE LA PERSONNE */
+.movie-people__name {
+  color: #ffffff;
+  font-weight: 500;
+  font-size: 0.95rem;
+  line-height: 1.3;
+}
+
+/* RÔLE (ACTOR / DIRECTOR / etc.) */
+.movie-people__role {
+  font-size: 0.8rem;
+  line-height: 1.3;
+  color: rgba(255,255,255,0.7);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-weight: 400;
+}
+
+/* RESPONSIVE SMALL SCREENS */
+@media (max-width: 768px) {
+  .movie-people {
+    padding: 1rem 1rem 1.25rem;
+    gap: 1.25rem;
+  }
+
+  .movie-people__list {
+    grid-auto-columns: minmax(140px, 60%);
+  }
+
+  .movie-people__avatar {
+    height: 88px;
+    width: 88px;
+  }
+}

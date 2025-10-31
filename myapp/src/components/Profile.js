@@ -2,6 +2,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { getStoredUser, storeUser } from './Login/auth';
 import FavoritesRail from './FavoritesRail';
+import FavoritePeopleRail from './FavoritePeopleRail';
+import './MoviePeople.css'; // IMPORTANT pour le style du rail
+
 import './RecommendationRail.css';
 
 
@@ -786,7 +789,7 @@ export default function Profile() {
                       className="profile-save-button"
                       onClick={handleSaveProfile}
                     >
-                      💾 Save
+                      Save
                     </button>
                     <button
                       className="profile-cancel-button"
@@ -801,7 +804,7 @@ export default function Profile() {
                         setIsEditing(false);
                       }}
                     >
-                      ✖ Cancel
+                      Cancel
                     </button>
                   </>
                 ) : (
@@ -809,7 +812,7 @@ export default function Profile() {
                     className="profile-edit-button"
                     onClick={() => setIsEditing(true)}
                   >
-                    ✏ Edit
+                    Edit
                   </button>
                 )
               ) : (
@@ -954,7 +957,7 @@ export default function Profile() {
           <div className="profile-meta">
             {profile.birthdate && (
               <span>
-                📅 {profile.birthdate}
+                Birthday: {profile.birthdate}
               </span>
             )}
 
@@ -998,7 +1001,7 @@ export default function Profile() {
                   className="friend-requests-button"
                   onClick={() => setShowRequests(!showRequests)}
                 >
-                  👥 Friend Requests ({friendRequests.length})
+                  Friend Requests ({friendRequests.length})
                 </button>
 
                 {showRequests && (
@@ -1086,9 +1089,14 @@ export default function Profile() {
         {/* Favorites */}
         <section>
           <FavoritesRail
-            title="Favorite Movies"
+            title="Favorite Movies & Series"
             items={favorites}
           />
+        </section>
+
+        {/* Favorite Crew & Cast */}
+        <section>
+          <FavoritePeopleRail peopleRefs={profile.favorites_people || []} />
         </section>
 
         {/* Reviews */}

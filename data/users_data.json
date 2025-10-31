@@ -67,11 +67,6 @@
                     ]
                 }
             ],
-            "stats": {
-                "total_favorites": 3,
-                "total_reviews": 2,
-                "friends_count": 2
-            },
             "watch_statuses": {}
         },
         {
@@ -141,11 +136,6 @@
                     ]
                 }
             ],
-            "stats": {
-                "total_favorites": 3,
-                "total_reviews": 2,
-                "friends_count": 2
-            },
             "watch_statuses": {}
         },
         {
@@ -222,11 +212,6 @@
                     ]
                 }
             ],
-            "stats": {
-                "total_favorites": 3,
-                "total_reviews": 2,
-                "friends_count": 2
-            },
             "watch_statuses": {}
         },
         {
@@ -244,11 +229,6 @@
             "reviews": [],
             "friends": [],
             "list": [],
-            "stats": {
-                "total_favorites": 3,
-                "total_reviews": 2,
-                "friends_count": 0
-            },
             "watch_statuses": {}
         },
         {
@@ -266,11 +246,91 @@
             "reviews": [],
             "friends": [],
             "list": [],
-            "stats": {
-                "total_favorites": 3,
-                "total_reviews": 1,
-                "friends_count": 0
-            },
+            "watch_statuses": {}
+        },
+        {
+            "_id": "u000000000006",
+            "username": "louis_r",
+            "password": "louis123",
+            "full_name": "Louis Renard",
+            "member_since": "2024-02-11",
+            "birthdate": "2001-01-30",
+            "location_city": "Charleroi",
+            "location_country": "Belgium",
+            "about_me": "Junior data engineer. I like slow-burn thrillers, synthwave soundtracks, and villain arcs that make sense.",
+            "favorites_movies": [],
+            "favorites_people": [],
+            "reviews": [],
+            "friends": [],
+            "list": [],
+            "watch_statuses": {}
+        },
+        {
+            "_id": "u000000000007",
+            "username": "ines_v",
+            "password": "ines123",
+            "full_name": "Inès Van Herten",
+            "member_since": "2024-06-09",
+            "birthdate": "2003-04-12",
+            "location_city": "Anvers",
+            "location_country": "Belgium",
+            "about_me": "UX student. Obsessed with animated films that are actually for adults, and movies that feel like paintings.",
+            "favorites_movies": [],
+            "favorites_people": [],
+            "reviews": [],
+            "friends": [],
+            "list": [],
+            "watch_statuses": {}
+        },
+        {
+            "_id": "u000000000008",
+            "username": "yassine_b",
+            "password": "yassine123",
+            "full_name": "Yassine Bouzid",
+            "member_since": "2023-12-19",
+            "birthdate": "1999-08-04",
+            "location_city": "Brussels",
+            "location_country": "Belgium",
+            "about_me": "Cloud / DevOps intern. I watch war films and space epics at 2am and then fall asleep in class.",
+            "favorites_movies": [],
+            "favorites_people": [],
+            "reviews": [],
+            "friends": [],
+            "list": [],
+            "watch_statuses": {}
+        },
+        {
+            "_id": "u000000000009",
+            "username": "emma_d",
+            "password": "emma123",
+            "full_name": "Emma De Smet",
+            "member_since": "2025-01-27",
+            "birthdate": "2004-11-18",
+            "location_city": "Louvain-la-Neuve",
+            "location_country": "Belgium",
+            "about_me": "Marketing & comms student. I live for A24 vibes, messy characters, and killer color grading.",
+            "favorites_movies": [],
+            "favorites_people": [],
+            "reviews": [],
+            "friends": [],
+            "list": [],
+            "watch_statuses": {}
+        },
+        {
+            "_id": "u000000000010",
+            "username": "gabriel_p",
+            "password": "gabriel123",
+            "full_name": "Gabriel Piron",
+            "member_since": "2025-03-04",
+            "birthdate": "2003-02-10",
+            "location_city": "Mons",
+            "location_country": "Belgium",
+            "about_me": "Game dev student. I love practical effects, creature design, and any movie with disgusting aliens.",
+            "favorites_movies": [],
+            "favorites_people": [],
+            "reviews": [],
+            "friends": [],
+            "list": [],
             "watch_statuses": {}
         }
     ]
