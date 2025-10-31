@@ -767,6 +767,39 @@ def cancel_friend_request(from_user, to_user):
 
     return jsonify({"status": "cancelled"})
 
+@app.route("/myprofile/<user_id>", methods=["PUT"])
+def update_profile(user_id):
+    payload = request.get_json() or {}
+
+    user = users_collection.find_one({"_id": user_id})
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    fields = ["about_me", "password", "full_name", "location_city", "location_country"]
+    updates = {}
+
+    for field in fields:
+        if field in payload:
+            if field == "password" and (payload[field] is None or str(payload[field]).strip() == ""):
+                continue
+            updates[field] = payload[field]
+
+    if not updates:
+        return jsonify({"error": "No valid fields to update"}), 400
+
+    users_collection.update_one({"_id": user_id}, {"$set": updates})
+
+    try:
+        r.delete(f"profile:{user_id}")
+        r.delete(f"user_detail:{user_id}")
+    except Exception as e:
+        print("cache delete failed:", e)
+
+    updated_user = users_collection.find_one({"_id": user_id})
+    updated_user["_id"] = str(updated_user["_id"])
+    updated_user.pop("password", None)
+
+    return jsonify(updated_user)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5001, debug=True)

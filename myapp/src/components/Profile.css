@@ -652,3 +652,189 @@
 .cancel-request-button:active {
   transform: scale(0.97);
 }
+
+.profile-page {
+  background: transparent; 
+  width: 100%;
+  min-height: calc(100vh - 100px); 
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 3rem clamp(1.5rem, 4vw, 4rem);
+  box-sizing: border-box;
+}
+
+.profile-container {
+  width: 100%;
+  max-width: 980px; 
+  background: rgba(9, 11, 19, 0.8);
+  border-radius: 16px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+  padding: 2.5rem 3rem;
+  backdrop-filter: blur(10px);
+}
+
+.profile-section-title {
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: #00b4d8;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  padding-bottom: .4rem;
+  margin-bottom: 1.5rem;
+}
+
+.profile-rail,
+.friends-rail,
+.review-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1.25rem;
+}
+
+.profile-empty {
+  opacity: 0.8;
+  text-align: center;
+  font-style: italic;
+  color: rgba(255,255,255,0.7);
+}
+
+@media (max-width: 768px) {
+  .profile-container {
+    padding: 1.5rem;
+  }
+}
+
+.review-card {
+  background: rgba(9, 11, 19, 0.85);
+  border-radius: 12px;
+  padding: 1rem;
+  width: 320px;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.4);
+  transition: all 0.25s ease;
+}
+
+.review-card[role="button"]:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 180, 216, 0.45);
+  background: rgba(9, 15, 25, 0.9);
+}
+
+.review-card[role="button"]:focus-visible {
+  outline: 2px solid rgba(0, 180, 216, 0.6);
+  outline-offset: 4px;
+  transform: translateY(-3px);
+  box-shadow: 0 0 12px rgba(0, 180, 216, 0.5);
+}
+
+.edit-profile-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  margin-top: 1rem;
+  background: rgba(0, 180, 216, 0.08);
+  padding: 1rem;
+  border-radius: 10px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+  max-width: 500px;
+}
+
+.edit-profile-form input,
+.edit-profile-form textarea {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 8px;
+  padding: 0.5rem 0.8rem;
+  color: white;
+  font-size: 0.9rem;
+  resize: vertical;
+}
+
+.edit-profile-form input:focus,
+.edit-profile-form textarea:focus {
+  outline: none;
+  border-color: #00b4d8;
+  box-shadow: 0 0 8px rgba(0,180,216,0.4);
+}
+
+.profile-hero-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.profile-hero-header h1 {
+  margin: 0;
+  color: #00b4d8;
+  font-size: 1.4rem;
+  line-height: 1.3;
+}
+
+.profile-hero-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.profile-edit-button,
+.profile-save-button,
+.profile-cancel-button {
+  background: linear-gradient(135deg, #0099ff, #0055aa);
+  border: 0;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 500;
+  line-height: 1.2;
+  padding: 0.4rem 0.6rem;
+  cursor: pointer;
+  box-shadow: 0 0 10px rgba(0,153,255,0.4);
+}
+
+.profile-save-button {
+  background: linear-gradient(135deg, #16a34a, #065f46);
+}
+
+.profile-cancel-button {
+  background: linear-gradient(135deg, #444, #222);
+}
+
+.profile-edit-input,
+.profile-edit-textarea {
+  background: rgba(0,0,0,0.4);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: #fff;
+  border-radius: 6px;
+  padding: 0.4rem 0.5rem;
+  font-size: 0.9rem;
+  width: 100%;
+  max-width: 320px;
+}
+
+.profile-edit-name {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #00b4d8;
+  max-width: 260px;
+}
+
+.profile-edit-location {
+  width: auto;
+  min-width: 90px;
+  display: inline-block;
+  margin: 0 0.25rem;
+}
+
+.profile-password-row {
+  margin-top: 0.75rem;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .5rem;
+  color: #fff;
+  font-size: .85rem;
+}
+
+.profile-password-label {
+  opacity: .8;
+}
