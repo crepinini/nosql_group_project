@@ -62,6 +62,7 @@ export default function Profile() {
     const statuses = profile?.watch_statuses || {};
     let watchedCount = 0;
     let planningCount = 0;
+    let watchingCount = 0;
 
     for (const movieId in statuses) {
       const st = statuses[movieId];
@@ -69,6 +70,8 @@ export default function Profile() {
         watchedCount += 1;
       } else if (st === "plan") {
         planningCount += 1;
+      } else if (st === "watching") {
+        watchingCount += 1;
       }
     }
 
@@ -77,6 +80,7 @@ export default function Profile() {
       favorites: favoritesCount,
       reviews: reviewsCount,
       watched: watchedCount,
+      watching: watchingCount,
       planning: planningCount,
     };
   }, [profile, friendCountOverride]);
@@ -1071,6 +1075,10 @@ export default function Profile() {
             <span className="stat-pill">
               planning to watch: {stats.planning}
             </span>
+            <span className="stat-pill">
+              watching: {stats.watching}
+            </span>
+
           </div>
 
         </section>
