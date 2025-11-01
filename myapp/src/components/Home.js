@@ -46,6 +46,7 @@ export default function Home({ filterType }) {
         } else {
           filteredData = data;
         }
+        filteredData.sort((a, b) => (b.year || 0) - (a.year || 0));//sort from newest to oldest
         setMovies(filteredData);
       } catch (err) {
         console.error(err);
