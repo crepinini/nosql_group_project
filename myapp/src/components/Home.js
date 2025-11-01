@@ -26,6 +26,8 @@ export default function Home({ filterType }) {
   const [selectedGenre, setSelectedGenre] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedTerm, setDebouncedTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -58,6 +60,7 @@ export default function Home({ filterType }) {
   useEffect(() => {
     const handle = setTimeout(() => {
       setDebouncedTerm(searchTerm.trim());
+      setCurrentPage(1);
     }, 350);
     return () => clearTimeout(handle);
   }, [searchTerm]);
@@ -71,6 +74,10 @@ export default function Home({ filterType }) {
   const visibleMovies = filteredMovies.filter((m) =>
     m.title.toLowerCase().includes(debouncedTerm.toLowerCase())
   );
+  const indexOfLastMovie = currentPage * itemsPerPage;
+  const indexOfFirstMovie = indexOfLastMovie - itemsPerPage;
+  const currentMovies = visibleMovies.slice(indexOfFirstMovie, indexOfLastMovie);
+  const totalPages = Math.ceil(visibleMovies.length / itemsPerPage);
 
   return (
     <div className="home-page">
@@ -90,7 +97,10 @@ export default function Home({ filterType }) {
               <select
                 className="genre-filter"
                 value={selectedGenre}
-                onChange={(e) => setSelectedGenre(e.target.value)}
+                onChange={(e) => {
+                  setSelectedGenre(e.target.value);
+                  setCurrentPage(1);
+                }}
               >
                 {genres.map((genre) => (
                   <option key={genre} value={genre}>
@@ -121,7 +131,7 @@ export default function Home({ filterType }) {
             </form>
 
             <div className="home-rail-movies">
-              {visibleMovies.map((movie) => {
+              {currentMovies.map((movie) => {
                 const runtimeLabel = formatRuntime(movie.duration);
                 return (
                   <div
@@ -156,6 +166,27 @@ export default function Home({ filterType }) {
                 );
               })}
             </div>
+            {totalPages > 1 && (
+              <div className="pagination">
+                <button
+                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </button>
+                <span>
+                  Page {currentPage} of {totalPages}
+                </span>
+                <button
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                  }
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                </button>
+              </div>
+            )}
           </>
         )}
       </main>
