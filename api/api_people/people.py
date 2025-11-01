@@ -3,7 +3,10 @@ import os
 
 from flask import Flask, jsonify, request
 from pymongo import MongoClient
+from pymongo.collation import Collation
 import redis
+
+from people_functions import serialize_document, build_cache_key, clamp, build_people_pipeline, build_people_payload
 
 
 app = Flask(__name__)
@@ -21,48 +24,62 @@ r = redis.Redis(
 CACHE_TTL_SECONDS = int(os.environ.get("CACHE_TTL_SECONDS", 60))
 
 
-def serialize_document(document):
-    serialized = {}
-    for key, value in document.items():
-        if key == "_id":
-            serialized[key] = str(value)
-        else:
-            serialized[key] = value
-    return serialized
-
-
-def build_cache_key(prefix, *parts):
-    normalized_parts = [part or "all" for part in parts]
-    return ":".join([prefix, *normalized_parts])
-
-
 @app.route("/people", methods=["GET"])
 def get_people():
     search = request.args.get("q")
+    role = (request.args.get("role") or "all").lower()
+    sort_option = (request.args.get("sort") or "default").lower()
     limit_param = request.args.get("limit")
+    page_param = request.args.get("page")
+    page_size_param = request.args.get("page_size")
 
     try:
         limit = int(limit_param) if limit_param else None
     except ValueError:
         limit = None
 
-    cache_key = build_cache_key("people", search or "", limit_param or "")
+    try:
+        page = int(page_param) if page_param else 1
+    except ValueError:
+        page = 1
+
+    try:
+        page_size = int(page_size_param) if page_size_param else None
+    except ValueError:
+        page_size = None
+
+    if page_size is None:
+        page_size = limit if limit is not None else 30
+
+    page_size = clamp(page_size, 1, 200)
+    page = max(page, 1)
+    skip = (page - 1) * page_size
+
+    cache_key = build_cache_key(
+        "people",
+        search or "",
+        role or "",
+        sort_option or "",
+        str(page),
+        str(page_size),
+    )
     cached = r.get(cache_key)
     if cached:
         print("people cache hit!")
         return jsonify(json.loads(cached))
 
-    query = {}
-    if search:
-        query["name"] = {"$regex": search, "$options": "i"}
+    pipeline = build_people_pipeline(search, role, sort_option, skip, page_size)
 
-    cursor = people_collection.find(query)
-    if limit:
-        cursor = cursor.limit(max(limit, 1))
+    collation = Collation(locale="en", strength=2)
+    cursor = people_collection.aggregate(pipeline, collation=collation)
+    documents = list(cursor)
 
-    documents = [serialize_document(item) for item in cursor]
-    r.setex(cache_key, CACHE_TTL_SECONDS, json.dumps(documents))
-    return jsonify(documents)
+    payload = build_people_payload(
+        documents, page, page_size, sort_option, role, search
+    )
+
+    r.setex(cache_key, CACHE_TTL_SECONDS, json.dumps(payload))
+    return jsonify(payload)
 
 
 @app.route("/people/<id>", methods=["GET"])

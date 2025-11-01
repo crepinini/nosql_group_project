@@ -14,6 +14,13 @@ const FILTER_OPTIONS = [
   { label: 'Writer', value: 'writer' },
   { label: 'Creator', value: 'creator' },
 ];
+const SORT_OPTIONS = [
+  { label: 'Default', value: 'default' },
+  { label: 'Name A-Z', value: 'name-asc' },
+  { label: 'Name Z-A', value: 'name-desc' },
+  { label: 'Most titles', value: 'credits-desc' },
+  { label: 'Fewest titles', value: 'credits-asc' },
+];
 
 const toArray = (value) => {
   if (!value) {
@@ -164,11 +171,61 @@ const normalizeKnownFor = (entries) => {
   return deduped.length ? [deduped[0]] : [];
 };
 
+const collectCreditsCount = (person) => {
+  const sources = [
+    person.movie,
+    person.movies,
+    person.series,
+    person.tv_series,
+    person.tvSeries,
+    person.credits,
+  ];
+
+  const seen = new Set();
+
+  sources.forEach((source) => {
+    if (!Array.isArray(source)) {
+      return;
+    }
+    source.forEach((entry) => {
+      if (entry == null) {
+        return;
+      }
+      if (typeof entry === 'string' || typeof entry === 'number') {
+        const key = String(entry).trim();
+        if (key) {
+          seen.add(key);
+        }
+        return;
+      }
+      const key =
+        entry._id ||
+        entry.id ||
+        entry.imdb_id ||
+        entry.imdbId ||
+        entry.title ||
+        entry.name;
+      if (key) {
+        seen.add(String(key));
+      }
+    });
+  });
+
+  return seen.size;
+};
+
 const normalizePeople = (people) =>
   people.map((person) => {
     const roles = normalizeRoles(person);
     const categories = categorizeRoles(roles);
-    const knownFor = normalizeKnownFor(person.movie);
+    const knownForSource =
+      person.movie ||
+      person.movies ||
+      person.series ||
+      person.tv_series ||
+      person.tvSeries ||
+      [];
+    const knownFor = normalizeKnownFor(knownForSource);
 
     return {
       raw: person,
@@ -178,6 +235,7 @@ const normalizePeople = (people) =>
       roles,
       categories,
       knownFor,
+      creditsCount: collectCreditsCount(person),
       profileLink: buildProfileLink(person),
       externalUrl: person.url || person.imdb_url || null,
     };
@@ -187,9 +245,12 @@ const CrewSearchPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedTerm, setDebouncedTerm] = useState('');
   const [category, setCategory] = useState('all');
-  const [rawPeople, setRawPeople] = useState([]);
+  const [sortOption, setSortOption] = useState('default');
   const [pageSize, setPageSize] = useState(PAGE_SIZE_OPTIONS[0]);
   const [page, setPage] = useState(1);
+  const [people, setPeople] = useState([]);
+  const [totalPeople, setTotalPeople] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -209,12 +270,13 @@ const CrewSearchPage = () => {
       if (debouncedTerm) {
         params.set('q', debouncedTerm);
       }
-      params.set('limit', '200');
+      params.set('role', category);
+      params.set('sort', sortOption);
+      params.set('page', String(page));
+      params.set('page_size', String(pageSize));
 
       const query = params.toString();
-      const endpoint = buildPeopleUrl(
-        `/people${query ? `?${params.toString()}` : ''}`,
-      );
+      const endpoint = buildPeopleUrl(`/people?${query}`);
 
       try {
         setIsLoading(true);
@@ -231,7 +293,32 @@ const CrewSearchPage = () => {
         }
 
         const payload = await response.json();
-        setRawPeople(Array.isArray(payload) ? payload : []);
+
+        const rawResults = Array.isArray(payload)
+          ? payload
+          : Array.isArray(payload?.results)
+          ? payload.results
+          : [];
+
+        setPeople(normalizePeople(rawResults));
+        const totalValue =
+          typeof payload?.total === 'number' ? payload.total : rawResults.length;
+
+        const pageSizeValue =
+          typeof payload?.pageSize === 'number' && payload.pageSize > 0
+            ? payload.pageSize
+            : pageSize;
+
+        setTotalPeople(totalValue);
+
+        const computedTotalPages =
+          typeof payload?.totalPages === 'number'
+            ? payload.totalPages
+            : pageSizeValue
+            ? Math.ceil(totalValue / pageSizeValue)
+            : 0;
+
+        setTotalPages(computedTotalPages);
       } catch (err) {
         if (err.name !== 'AbortError') {
           const hint = endpoint.startsWith('http')
@@ -247,48 +334,13 @@ const CrewSearchPage = () => {
     loadPeople();
 
     return () => controller.abort();
-  }, [debouncedTerm]);
-
-  useEffect(() => {
-    setPage(1);
-  }, [debouncedTerm, category]);
-
-  useEffect(() => {
-    setPage(1);
-  }, [pageSize]);
-
-  const normalizedPeople = useMemo(
-    () => normalizePeople(rawPeople),
-    [rawPeople],
-  );
-
-  const filteredPeople = useMemo(
-    () =>
-      normalizedPeople
-        .filter((person) =>
-          category === 'all' ? true : person.categories.includes(category),
-        )
-        .sort((a, b) => a.name.localeCompare(b.name)),
-    [normalizedPeople, category],
-  );
-
-  const totalPages = filteredPeople.length
-    ? Math.ceil(filteredPeople.length / pageSize)
-    : 0;
+  }, [debouncedTerm, category, sortOption, page, pageSize]);
 
   useEffect(() => {
     if (totalPages && page > totalPages) {
       setPage(totalPages);
     }
   }, [page, totalPages]);
-
-  const paginatedPeople = useMemo(() => {
-    if (!filteredPeople.length) {
-      return [];
-    }
-    const start = (page - 1) * pageSize;
-    return filteredPeople.slice(start, start + pageSize);
-  }, [filteredPeople, page, pageSize]);
 
   const pageButtons = useMemo(() => {
     if (!totalPages) {
@@ -338,23 +390,28 @@ const CrewSearchPage = () => {
   }, [totalPages, page]);
 
   const summaryText = useMemo(() => {
-    const total = filteredPeople.length;
-    if (!total) {
-      return rawPeople.length
-        ? '0 matches for the selected filters'
-        : 'No profiles yet';
+    const hasFilters = Boolean(debouncedTerm) || category !== 'all';
+
+    if (!totalPeople) {
+      return hasFilters ? '0 matches for the selected filters' : 'No profiles yet';
+    }
+
+    if (!people.length) {
+      return 'No profiles on this page.';
     }
 
     const rangeStart = (page - 1) * pageSize + 1;
-    const rangeEnd = Math.min(rangeStart + paginatedPeople.length - 1, total);
-    const pageLabel = totalPages > 1 ? ` (page ${page} of ${totalPages})` : '';
-    return `Showing ${rangeStart}-${rangeEnd} of ${total} profiles${pageLabel}`;
+    const rangeEnd = Math.min(rangeStart + people.length - 1, totalPeople);
+    const currentPage = Math.min(page, Math.max(totalPages, 1));
+    const pageLabel = totalPages > 1 ? ` (page ${currentPage} of ${totalPages})` : '';
+    return `Showing ${rangeStart}-${rangeEnd} of ${totalPeople} profiles${pageLabel}`;
   }, [
-    filteredPeople.length,
-    paginatedPeople.length,
+    debouncedTerm,
+    category,
+    people.length,
     page,
     pageSize,
-    rawPeople.length,
+    totalPeople,
     totalPages,
   ]);
 
@@ -383,21 +440,49 @@ const CrewSearchPage = () => {
           type="search"
           placeholder="Search by name"
           value={searchTerm}
-          onChange={(event) => setSearchTerm(event.target.value)}
+          onChange={(event) => {
+            setSearchTerm(event.target.value);
+            setPage(1);
+          }}
         />
-        <div className="crew-page__filters" role="group" aria-label="Filter by role">
-          {FILTER_OPTIONS.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              className={`crew-page__filter ${
-                category === option.value ? 'crew-page__filter--active' : ''
-              }`}
-              onClick={() => setCategory(option.value)}
-            >
-              {option.label}
-            </button>
-          ))}
+        <div className="crew-page__filter-bar">
+          <div className="crew-page__sort">
+            <label htmlFor="crew-sort">Sort</label>
+            <div className="crew-page__sort-control">
+              <select
+                id="crew-sort"
+                className="crew-page__sort-select"
+                value={sortOption}
+                onChange={(event) => {
+                  setSortOption(event.target.value);
+                  setPage(1);
+                }}
+              >
+                {SORT_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="crew-page__filters" role="group" aria-label="Filter by role">
+            {FILTER_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                className={`crew-page__filter ${
+                  category === option.value ? 'crew-page__filter--active' : ''
+                }`}
+                onClick={() => {
+                  setCategory(option.value);
+                  setPage(1);
+                }}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
         </div>
       </form>
 
@@ -413,20 +498,23 @@ const CrewSearchPage = () => {
         </div>
       ) : null}
 
-      {!isLoading && !error && !filteredPeople.length ? (
+      {!isLoading && !error && totalPeople === 0 ? (
         <div className="crew-page__status" role="status">
           No people matched your filters. Try a different search or reset the filters.
         </div>
       ) : null}
 
-      {filteredPeople.length ? (
+      {totalPeople > 0 ? (
         <div className="crew-page__toolbar" aria-label="Pagination controls">
           <div className="crew-page__page-size">
             <label htmlFor="crew-page-size">Profiles per page</label>
             <select
               id="crew-page-size"
               value={pageSize}
-              onChange={(event) => setPageSize(Number(event.target.value))}
+              onChange={(event) => {
+                setPageSize(Number(event.target.value));
+                setPage(1);
+              }}
             >
               {PAGE_SIZE_OPTIONS.map((option) => (
                 <option key={option} value={option}>
@@ -471,8 +559,12 @@ const CrewSearchPage = () => {
             <button
               type="button"
               className="crew-page__pager-button"
-              onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
-              disabled={page >= totalPages}
+              onClick={() =>
+                setPage((prev) =>
+                  totalPages ? Math.min(totalPages, prev + 1) : prev,
+                )
+              }
+              disabled={page >= totalPages || totalPages === 0}
             >
               Next
             </button>
@@ -481,7 +573,7 @@ const CrewSearchPage = () => {
       ) : null}
 
       <div className="crew-grid">
-        {paginatedPeople.map((person) => {
+        {people.map((person) => {
           const content = (
             <>
               <div className="crew-card__avatar">

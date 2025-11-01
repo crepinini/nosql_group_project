@@ -345,11 +345,14 @@ const MyList = () => {
         }
         const payload = await res.json();
         if (!aborted) {
-          const normalized = Array.isArray(payload)
+          const rawEntries = Array.isArray(payload)
             ? payload
-                .map(normalizePerson)
-                .filter((entry) => entry.id)
+            : Array.isArray(payload?.results)
+            ? payload.results
             : [];
+          const normalized = rawEntries
+            .map(normalizePerson)
+            .filter((entry) => entry.id);
           setPeopleCatalog(normalized);
         }
       } catch (err) {
