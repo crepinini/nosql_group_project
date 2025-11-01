@@ -47,6 +47,45 @@ export default function Profile() {
   const [sendingRequest, setSendingRequest] = useState(false);
   const [pendingRequests, setPendingRequests] = useState([]);
   const [incomingRequest, setIncomingRequest] = useState(null);
+
+  useEffect(() => {
+
+    if (!authUser || !profile || authUser._id === profile._id) return;
+    const controller = new AbortController();
+    (async () => {
+      try {
+
+        const res = await fetch(
+          `http://localhost:5001/friend-requests/${profile._id}`,
+          { signal: controller.signal }
+        );
+
+        if (!res.ok) {
+          console.warn("could not fetch target user's pending requests", res.status);
+          return;
+        }
+
+        const data = await res.json();
+        const didISendOne = data.some(
+          (req) => req.from_user === authUser._id
+        );
+
+        if (didISendOne) {
+          setRequestSent(true);
+        } else {
+          setRequestSent(false);
+        }
+      } catch (err) {
+        if (err.name !== "AbortError") {
+          console.error("error checking outgoing request", err);
+        }
+      }
+    })();
+
+    return () => controller.abort();
+  }, [authUser?._id, profile?._id]);
+
+
   const [showUnfriendMenu, setShowUnfriendMenu] = useState(false);
   const [removingFriend, setRemovingFriend] = useState(false);
   const [showIncomingMenu, setShowIncomingMenu] = useState(false);

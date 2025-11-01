@@ -1,4 +1,6 @@
-/* Page wrapper */
+/* ===============================
+   GLOBAL PAGE CONTAINER
+   =============================== */
 .friends-page {
   width: 100%;
   min-height: calc(100vh - 100px);
@@ -12,7 +14,6 @@
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Inter", Roboto, sans-serif;
 }
 
-/* Card-ish container */
 .friends-container {
   width: 100%;
   max-width: 980px;
@@ -21,99 +22,69 @@
     rgba(16, 15, 23, 0.9);
   border-radius: 24px;
   box-shadow: 0 24px 40px rgba(0, 0, 0, 0.5);
-  padding: 2rem 2rem 3rem;
+  padding: 2.5rem 2rem 3rem;
   box-sizing: border-box;
 }
 
-/* =========================
-   HEADER
-   ========================= */
-.friends-header {
-  background: rgba(0, 180, 216, 0.08);
-  border: 1px solid rgba(0, 180, 216, 0.25);
-  padding: 1.5rem;
-  border-radius: 16px;
-  box-shadow: 0 16px 32px rgba(0,0,0,0.4);
-}
-
-.friends-header-top {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-
-.friends-title {
-  margin: 0;
-  font-size: 1.4rem;
-  font-weight: 600;
-  color: #00b4d8;
-  line-height: 1.2;
-}
-
-.friends-username {
-  font-size: 0.9rem;
-  color: #ccc;
-  opacity: 0.9;
-}
-
-.friends-warn {
-  margin-top: 0.75rem;
-  font-size: 0.9rem;
-  color: #ff8585;
-}
-
-/* =========================
-   SECTION
-   ========================= */
+/* ===============================
+   SECTIONS & TITLES
+   =============================== */
 .friends-section {
-  margin-top: 2rem;
+  margin-top: 2.5rem;
 }
 
 .section-header {
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
 }
 
 .section-title {
   color: #00b4d8;
-  font-size: 1.1rem;
+  font-size: 1.4rem;
   font-weight: 600;
   margin: 0;
 }
 
 .section-sub {
-  font-size: 0.8rem;
+  font-size: 0.9rem;
   color: #aaa;
   line-height: 1.4;
-  margin-top: 0.4rem;
-  max-width: 48ch;
+  margin-top: 0.3rem;
+  max-width: 55ch;
 }
 
-/* =========================
-   FRIENDS GRID
-   ========================= */
+/* ===============================
+   GRID (for friends & search)
+   =============================== */
 .friends-grid,
 .search-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1.25rem;
+  justify-items: center;
 }
 
-/* =========================
-   FRIEND CARD (your friends)
-   ========================= */
+/* ===============================
+   FRIEND CARD
+   =============================== */
 .friend-card {
   position: relative;
   background:
-    radial-gradient(circle at top right, rgba(0,180,216,0.12) 0%, rgba(0,0,0,0) 60%),
-    rgba(16,15,23,0.6);
+    radial-gradient(circle at top right, rgba(0,180,216,0.14) 0%, rgba(0,0,0,0) 60%),
+    rgba(16, 15, 23, 0.7);
   border: 1px solid rgba(255,255,255,0.08);
   border-radius: 16px;
-  padding: 1rem;
+  padding: 1.25rem 1rem;
   box-shadow: 0 16px 32px rgba(0,0,0,0.5);
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+}
+
+.friend-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.65);
 }
 
 .friend-card-inner {
@@ -128,9 +99,12 @@
   border-radius: 12px;
 }
 
+/* ===============================
+   AVATAR
+   =============================== */
 .friend-avatar {
-  width: 56px;
-  height: 56px;
+  width: 64px;
+  height: 64px;
   border-radius: 12px;
   background: rgba(0,180,216,0.15);
   color: #00b4d8;
@@ -138,28 +112,30 @@
   font-size: 1rem;
   display: grid;
   place-items: center;
-  margin: 0 auto 0.5rem auto;
+  margin: 0 auto 0.75rem auto;
   border: 1px solid rgba(0,180,216,0.4);
   box-shadow: 0 10px 20px rgba(0,180,216,0.2);
+  user-select: none;
 }
 
 .friend-name {
   margin: 0.4rem 0 0.25rem;
-  font-size: 0.95rem;
+  font-size: 1rem;
   font-weight: 600;
   color: #fff;
   line-height: 1.3;
-  word-break: break-word;
 }
 
 .friend-meta {
   margin: 0;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   color: #aaa;
   line-height: 1.4;
-  word-break: break-word;
 }
 
+/* ===============================
+   DELETE FRIEND BUTTON
+   =============================== */
 .friend-delete-btn {
   position: absolute;
   top: 0.6rem;
@@ -173,29 +149,30 @@
   padding: 0.3rem 0.4rem;
   cursor: pointer;
   box-shadow: 0 10px 20px rgba(255,0,0,0.25);
+  transition: background 0.2s ease;
 }
 
 .friend-delete-btn:hover {
   background: rgba(255,0,0,0.18);
 }
 
-/* =========================
+/* ===============================
    SEARCH BAR
-   ========================= */
+   =============================== */
 .friend-search-bar {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.6rem;
   margin-bottom: 1.5rem;
+  align-items: center;
 }
 
 .friend-search-input {
-  flex: 1 1 220px;
-  min-width: 220px;
+  flex: 1 1 240px;
   background: rgba(255,255,255,0.05);
   border: 1px solid rgba(255,255,255,0.15);
   border-radius: 8px;
-  padding: 0.6rem 0.8rem;
+  padding: 0.7rem 0.9rem;
   color: #f2f2f2;
   font-size: 0.9rem;
   outline: none;
@@ -203,138 +180,41 @@
 
 .friend-search-input:focus {
   border-color: #00b4d8;
-  box-shadow: 0 0 0 2px rgba(0,180,216,0.4);
+  box-shadow: 0 0 0 2px rgba(0,180,216,0.35);
 }
 
-.friend-search-button {
-  background: #00b4d8;
-  border: none;
-  border-radius: 8px;
-  padding: 0.6rem 1rem;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #0a0a0a;
-  cursor: pointer;
-  line-height: 1.2;
-  box-shadow: 0 14px 24px rgba(0,180,216,0.4);
-  transition: filter 0.12s;
+.friend-search-status {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #00b4d8;
+  text-shadow: 0 0 6px rgba(0, 180, 216, 0.5);
 }
 
-.friend-search-button[disabled] {
-  opacity: 0.6;
-  cursor: not-allowed;
-  filter: grayscale(0.4);
-}
-
-.friend-search-button:not([disabled]):hover {
-  filter: brightness(1.1);
-}
-
-/* =========================
-   SEARCH RESULT CARD
-   ========================= */
+/* ===============================
+   SEARCH CARD
+   =============================== */
 .search-card {
   background:
     radial-gradient(circle at top right, rgba(0,180,216,0.12) 0%, rgba(0,0,0,0) 60%),
     rgba(16,15,23,0.6);
   border: 1px solid rgba(255,255,255,0.08);
   border-radius: 16px;
-  padding: 1rem;
+  padding: 1rem 1rem 1.2rem;
   box-shadow: 0 16px 32px rgba(0,0,0,0.5);
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
+  transition: transform 0.15s ease;
 }
 
-.search-card-clickable {
-  width: 100%;
-  cursor: pointer;
-  text-align: center;
-  outline: none;
+.search-card:hover {
+  transform: translateY(-3px);
 }
 
-.search-card-clickable:focus-visible {
-  box-shadow: 0 0 0 2px #00b4d8;
-  border-radius: 12px;
-}
-
-/* action row below avatar/name */
-.search-action-row {
-  margin-top: 0.75rem;
-  width: 100%;
-}
-
-.search-action-btn {
-  width: 100%;
-  border-radius: 8px;
-  padding: 0.5rem 0.75rem;
-  font-size: 0.8rem;
-  font-weight: 600;
-  line-height: 1.2;
-  cursor: pointer;
-  border: none;
-  box-shadow: 0 12px 20px rgba(0,0,0,0.4);
-}
-
-/* states */
-.search-action-btn.add {
-  background: #00b4d8;
-  color: #0a0a0a;
-  border: none;
-  box-shadow: 0 14px 24px rgba(0,180,216,0.4);
-}
-
-.search-action-btn.add:hover {
-  filter: brightness(1.1);
-}
-
-.search-action-btn.pending,
-.search-action-btn.already {
-  background: rgba(255,255,255,0.08);
-  color: #ccc;
-  border: 1px solid rgba(255,255,255,0.2);
-  cursor: not-allowed;
-}
-
-/* =========================
-   TEXT HELPERS
-   ========================= */
-.friends-error {
-  color: #ff6b6b;
-  font-size: 0.9rem;
-  margin-bottom: 1rem;
-}
-
-.friends-empty {
-  color: #aaa;
-  font-size: 0.9rem;
-  padding: 1rem 0;
-  text-align: center;
-}
-
-
-.friend-search-status {
-  align-self: center;
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: #00b4d8;
-  text-shadow: 0 0 8px rgba(0, 180, 216, 0.6);
-}
-
-.friend-card-clickzone {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  cursor: pointer;
-}
-
-.friend-card-clickzone:focus {
-  outline: 2px solid rgba(0,180,216,0.6);
-  outline-offset: 4px;
-  border-radius: 12px;
-}
-
+/* ===============================
+   BUTTONS
+   =============================== */
 .friend-action-btn {
   margin-top: 0.9rem;
   width: 100%;
@@ -342,7 +222,7 @@
   border: none;
   border-radius: 8px;
   padding: 0.6rem 0.75rem;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   font-weight: 600;
   color: #0a0a0a;
   cursor: pointer;
@@ -350,23 +230,35 @@
   box-shadow: 0 10px 20px rgba(0, 180, 216, 0.4),
     0 16px 32px rgba(0, 0, 0, 0.8);
   text-align: center;
+  transition: filter 0.12s ease, transform 0.12s ease;
 }
 
 .friend-action-btn:hover {
-  filter: brightness(1.07);
-  box-shadow: 0 14px 28px rgba(0, 180, 216, 0.55),
-    0 20px 40px rgba(0, 0, 0, 0.9);
+  filter: brightness(1.08);
+  transform: translateY(-2px);
 }
 
 .friend-action-btn-disabled {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255,255,255,0.08);
   color: #aaa;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255,255,255,0.2);
   box-shadow: none;
   cursor: default;
 }
 
-.search-grid {
-  justify-content: center;       /* centre les colonnes horizontalement */
-  justify-items: center;         /* centre le contenu de chaque cellule */
+/* ===============================
+   TEXT STATES
+   =============================== */
+.friends-error {
+  color: #ff6b6b;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.friends-empty {
+  color: #aaa;
+  font-size: 0.9rem;
+  padding: 1rem 0;
+  text-align: center;
 }
