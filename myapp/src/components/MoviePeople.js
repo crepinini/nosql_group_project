@@ -243,7 +243,7 @@ const MoviePeople = ({ movie }) => {
                 ? profileRole.join(' / ')
                 : profileRole || fallbackRole;
               const internalDestination = profile?._id
-                ? `/actors/${profile._id}`
+                ? `/people/${profile._id}`
                 : null;
               const externalDestination = profile?.url;
 

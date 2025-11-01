@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { buildPeopleUrl } from '../config';
-import './CrewSearchPage.css';
+import './PeopleSearchPage.css';
 
 const FALLBACK_AVATAR =
   'https://ui-avatars.com/api/?name=MM&background=023047&color=ffffff&size=256&length=2';
@@ -123,7 +123,7 @@ const categorizeRoles = (roles) => {
 
 const buildProfileLink = (person) => {
   const identifier = person?._id || person?.imdb_name_id;
-  return identifier ? `/actors/${identifier}` : null;
+  return identifier ? `/people/${identifier}` : null;
 };
 
 const normalizeKnownFor = (entries) => {
@@ -241,7 +241,7 @@ const normalizePeople = (people) =>
     };
   });
 
-const CrewSearchPage = () => {
+const PeopleSearchPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedTerm, setDebouncedTerm] = useState('');
   const [category, setCategory] = useState('all');
@@ -652,4 +652,5 @@ const CrewSearchPage = () => {
   );
 };
 
-export default CrewSearchPage;
+export default PeopleSearchPage;
+

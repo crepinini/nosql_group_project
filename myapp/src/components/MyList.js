@@ -281,7 +281,7 @@ const MyList = () => {
     return () => {
       abort = true;
     };
-  }, [userId, selectedOwner]);
+  }, [userId, selectedOwner, selectedListId]);
 
   useEffect(() => {
     if (selectedOwner !== 'self') {
@@ -993,7 +993,7 @@ const catalogById = useMemo(() => {
     }
     const listType = (typeOverride || selectedList?.type || 'movies').toLowerCase();
     if (listType === 'people') {
-      navigate(`/actors/${encodeURIComponent(normalizedId)}`);
+      navigate(`/people/${encodeURIComponent(normalizedId)}`);
     } else {
       navigate(`/movies-series/${encodeURIComponent(normalizedId)}`);
     }

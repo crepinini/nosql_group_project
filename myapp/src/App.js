@@ -2,9 +2,9 @@ import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-ro
 import Navbar from './components/Navbar';
 import MoviesPage from './pages/MoviesPage';
 import SeriesPage from './pages/SeriesPage';
-import CrewPage from './pages/CrewPage';
+import PeopleSearchPage from './pages/PeopleSearchPage';
 import ProfilePage from './pages/ProfilePage';
-import ActorDetailPage from './pages/ActorDetailPage';
+import PeopleDetailPage from './pages/PeopleDetailPage';
 import MovieDetailPage from './pages/MovieDetailPage';
 import RecommendationsPage from './pages/RecommendationsPage';
 import MyListPage from './pages/MyListPage';
@@ -34,9 +34,11 @@ function App() {
             <Route path="/home" element={<Home />} />
             <Route path="/movies" element={<MoviesPage />} />
             <Route path="/series" element={<SeriesPage />} />
-            <Route path="/crew" element={<CrewPage />} />
-            <Route path="/actors" element={<CrewPage />} />
-            <Route path="/actors/:actorId" element={<ActorDetailPage />} />
+            <Route path="/crew" element={<PeopleSearchPage />} />
+            <Route path="/actors" element={<PeopleSearchPage />} />
+            <Route path="/people" element={<PeopleSearchPage />} />
+            <Route path="/actors/:actorId" element={<PeopleDetailPage />} />
+            <Route path="/people/:personId" element={<PeopleDetailPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/movies-series/:movieId" element={<MovieDetailPage />} />
             <Route path="/recommendations" element={<RecommendationsPage />} />

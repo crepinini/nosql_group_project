@@ -28,7 +28,9 @@ const Navbar = () => {
 
   return (
     <header className="navbar">
-      <div className="navbar__logo">MovieManiac</div>
+      <Link to="/home" className="navbar__logo" aria-label="MovieManiac home">
+        MovieManiac
+      </Link>
       <nav className="navbar__links" aria-label="Primary navigation">
         <Link to="/home">MyHome</Link>
         <Link to="/movies">Movies</Link>

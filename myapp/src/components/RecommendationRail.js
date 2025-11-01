@@ -22,6 +22,49 @@ const resolveYear = (item) => {
   return null;
 };
 
+const formatRuntime = (duration) => {
+  if (!duration) {
+    return null;
+  }
+  const minutes = Number(duration);
+  if (!Number.isFinite(minutes) || minutes <= 0) {
+    return null;
+  }
+  const hours = Math.floor(minutes / 60);
+  const remaining = minutes % 60;
+  if (hours <= 0) {
+    return `${minutes}m`;
+  }
+  return `${hours}h ${String(remaining).padStart(2, '0')}m`;
+};
+
+const formatSeasons = (value) => {
+  if (value == null) {
+    return null;
+  }
+  if (Array.isArray(value)) {
+    const total = value.length;
+    if (!total) {
+      return null;
+    }
+    return `${total} season${total === 1 ? '' : 's'}`;
+  }
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return null;
+  }
+  const rounded = Math.round(parsed);
+  return `${rounded} season${rounded === 1 ? '' : 's'}`;
+};
+
+const isSeriesEntry = (item) => {
+  const type = String(item?.imdb_type || '').toLowerCase();
+  if (!type) {
+    return false;
+  }
+  return type.includes('series') || type.startsWith('tv');
+};
+
 const RecommendationRail = ({
   title,
   subtitle = '',
@@ -29,9 +72,14 @@ const RecommendationRail = ({
   loading = false,
   error = null,
   emptyMessage = 'Nothing to recommend yet.',
+  hideWhenEmpty = true,
 }) => {
   const navigate = useNavigate();
   const safeItems = Array.isArray(items) ? items : [];
+
+  if (!loading && !error && hideWhenEmpty && safeItems.length === 0) {
+    return null;
+  }
 
   return (
     <section className="recommendation-rail" aria-label={title}>
@@ -41,7 +89,7 @@ const RecommendationRail = ({
       </div>
 
       {loading ? (
-        <p className="recommendation-rail__status">Loading recommendations…</p>
+        <p className="recommendation-rail__status">Loading recommendations.</p>
       ) : error ? (
         <p className="recommendation-rail__status recommendation-rail__status--error">
           {error}
@@ -56,8 +104,30 @@ const RecommendationRail = ({
             const targetId = movie?._id || movie?.imdb_id;
             const titleLabel = movie?.title || 'Untitled';
             const year = resolveYear(movie);
-            const typeLabel =
-              (movie?.imdb_type && String(movie.imdb_type)) || 'Title';
+            const typeLabel = movie?.imdb_type
+              ? String(movie.imdb_type).toUpperCase()
+              : 'TITLE';
+            const isSeries = isSeriesEntry(movie);
+            const runtimeLabel = formatRuntime(
+              movie?.duration ||
+                movie?.runtimeMinutes ||
+                movie?.runtime ||
+                movie?.running_time ||
+                movie?.length_minutes,
+            );
+            const seasonsLabel = isSeries
+              ? formatSeasons(
+                  movie?.series_total_seasons ||
+                    movie?.total_seasons ||
+                    movie?.totalSeasons ||
+                    movie?.seasons,
+                )
+              : null;
+            const detailParts = [
+              year,
+              typeLabel,
+              isSeries ? seasonsLabel : runtimeLabel,
+            ].filter(Boolean);
 
             return (
               <button
@@ -80,7 +150,7 @@ const RecommendationRail = ({
                 <div className="recommendation-rail__info">
                   <span className="recommendation-rail__title">{titleLabel}</span>
                   <span className="recommendation-rail__meta">
-                    {[year, typeLabel].filter(Boolean).join(' • ')}
+                    {detailParts.join(' | ')}
                   </span>
                   {movie?.__reason ? (
                     <span className="recommendation-rail__reason">{movie.__reason}</span>

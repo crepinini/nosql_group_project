@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import MovieDetail from '../components/MovieDetail';
 import MoviePeople from '../components/MoviePeople';
 import MovieTrailer from '../components/MovieTrailer';
@@ -25,6 +25,44 @@ const curatedSelection = (movies) => {
       return ratingB - ratingA;
     })
     .slice(0, 18);
+};
+
+const inferCollectionType = (entity) => {
+  if (!entity) {
+    return 'movie';
+  }
+  const raw = String(entity.imdb_type || entity.type || '').toLowerCase();
+  if (!raw) {
+    return 'movie';
+  }
+  if (raw.startsWith('tv')) {
+    return 'series';
+  }
+  if (raw.includes('series') && !raw.includes('movie')) {
+    return 'series';
+  }
+  return raw.includes('movie') ? 'movie' : 'movie';
+};
+
+const gatherIdentifiers = (entry) => {
+  const values = new Set();
+  const consider = (value) => {
+    if (value === null || value === undefined) {
+      return;
+    }
+    const text = String(value).trim();
+    if (text) {
+      values.add(text);
+    }
+  };
+  if (typeof entry === 'string' || typeof entry === 'number') {
+    consider(entry);
+  } else if (entry && typeof entry === 'object') {
+    ['_id', 'id', 'movie_id', 'imdb_id'].forEach((key) => {
+      consider(entry[key]);
+    });
+  }
+  return Array.from(values);
 };
 
 const extractFavoritesList = (authUser) => {
@@ -74,6 +112,13 @@ const formatFriendCommentDate = (value) => {
 const MovieDetailPage = () => {
   const navigate = useNavigate();
   const { movieId } = useParams();
+  const handleGoBack = () => {
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate('/home');
+    }
+  };
   const [movies, setMovies] = useState([]);
   const [selectedMovie, setSelectedMovie] = useState(null);
   const [error, setError] = useState(null);
@@ -100,6 +145,9 @@ const MovieDetailPage = () => {
   const [commentError, setCommentError] = useState(null);
   const [friendComments, setFriendComments] = useState([]);
   const [isEditingComment, setIsEditingComment] = useState(false);
+  const [relatedTitles, setRelatedTitles] = useState([]);
+  const [relatedLoading, setRelatedLoading] = useState(false);
+  const [relatedError, setRelatedError] = useState(null);
 
   useEffect(() => {
     const handleAuthChange = () => {
@@ -172,6 +220,86 @@ const MovieDetailPage = () => {
   const heroMovieId = heroMovie?._id;
   const heroMovieImdbId = heroMovie?.imdb_id;
   const userId = authUser?._id || authUser?.username || null;
+  const selectedMovieKey = useMemo(() => {
+    if (!selectedMovie) {
+      return '';
+    }
+    const identifiers = gatherIdentifiers(selectedMovie);
+    return identifiers.sort().join('|');
+  }, [selectedMovie]);
+  const favoriteIdentifiers = useMemo(() => {
+    const favorites = extractFavoritesList(authUser);
+    const set = new Set();
+    favorites.forEach((entry) => {
+      gatherIdentifiers(entry).forEach((id) => set.add(id));
+    });
+    return Array.from(set);
+  }, [authUser]);
+  const favoriteIdentifiersKey = useMemo(
+    () => favoriteIdentifiers.slice().sort().join(','),
+    [favoriteIdentifiers],
+  );
+
+  useEffect(() => {
+    const baseId = selectedMovie?._id || selectedMovie?.imdb_id;
+    if (!baseId) {
+      setRelatedTitles([]);
+      setRelatedError(null);
+      setRelatedLoading(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    (async () => {
+      try {
+        setRelatedLoading(true);
+        setRelatedError(null);
+        const params = new URLSearchParams();
+        params.set('limit', '18');
+        params.set('min_shared', '2');
+        const inferredType = inferCollectionType(selectedMovie);
+        params.set('type', inferredType);
+
+        const combinedExclude = new Set(favoriteIdentifiers);
+        gatherIdentifiers(selectedMovie).forEach((id) =>
+          combinedExclude.add(id),
+        );
+        if (combinedExclude.size) {
+          params.set('exclude', Array.from(combinedExclude).join(','));
+        }
+        if (favoriteIdentifiers.length) {
+          params.set('favorite_ids', favoriteIdentifiers.join(','));
+        }
+        const endpoint = buildMoviesUrl(
+          `/movies-series/${encodeURIComponent(
+            baseId,
+          )}/related?${params.toString()}`,
+        );
+        const response = await fetch(endpoint, {
+          signal: controller.signal,
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        const payload = await response.json();
+        setRelatedTitles(Array.isArray(payload) ? payload : []);
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          console.error('Failed to load related titles', err);
+          setRelatedTitles([]);
+          setRelatedError(
+            'Unable to load related titles. Try refreshing the page.',
+          );
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setRelatedLoading(false);
+        }
+      }
+    })();
+
+    return () => controller.abort();
+  }, [selectedMovieKey, favoriteIdentifiersKey, selectedMovie, favoriteIdentifiers]);
 
   useEffect(() => {
     if (!heroMovieId) {
@@ -258,6 +386,13 @@ const MovieDetailPage = () => {
       setFavoritePending(false);
     }
   };
+
+  const discoverMovies = relatedTitles.length ? relatedTitles : movies;
+  const discoverLoading = relatedLoading && relatedTitles.length === 0;
+  const discoverError = relatedTitles.length ? null : relatedError;
+  const discoverEmptyMessage = relatedTitles.length
+    ? 'No similar titles yet. Check back soon.'
+    : 'Browse curated picks while we gather related titles.';
 
   const handleUpdateStatus = async (nextStatus) => {
     if (!userId || !heroMovieId) {
@@ -638,9 +773,9 @@ const MovieDetailPage = () => {
       <div className="status status--error" role="alert">
         <h1>We hit a snag.</h1>
         <p>{error}</p>
-        <Link className="status__link" to="/home">
-          Back to home
-        </Link>
+        <button type="button" className="status__link" onClick={handleGoBack}>
+          Back to previous page
+        </button>
       </div>
     );
   }
@@ -698,10 +833,22 @@ const MovieDetailPage = () => {
       <MovieTrailer trailerUrl={heroMovie?.trailer_url} />
       <MoviePeople movie={heroMovie} />
       <MovieRail
-        movies={movies}
-        selectedId={heroMovie?._id}
+        movies={discoverMovies}
+        selectedId={heroMovie?._id || heroMovie?.imdb_id}
         onSelect={handleSelect}
+        loading={discoverLoading}
+        error={discoverError}
+        emptyMessage={discoverEmptyMessage}
       />
+      <div className="movie-detail-page__actions">
+        <button
+          type="button"
+          className="movie-detail-page__back"
+          onClick={handleGoBack}
+        >
+          Back to previous page
+        </button>
+      </div>
     </div>
   );
 };

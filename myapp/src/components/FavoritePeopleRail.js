@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import './FavoritePeople.css'; // on réutilise les mêmes styles visuels
 
 import { buildPeopleUrl } from '../config';
@@ -17,8 +17,6 @@ const buildAvatarUrl = (name, photoUrl) => {
 };
 
 const FavoritePeopleRail = ({ peopleRefs = [] }) => {
-    const navigate = useNavigate();
-
     const [peopleDetails, setPeopleDetails] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -36,11 +34,13 @@ const FavoritePeopleRail = ({ peopleRefs = [] }) => {
             });
     }, [peopleRefs]);
 
+    const uniqueIdsKey = useMemo(() => uniqueIds.join(','), [uniqueIds]);
+
     useEffect(() => {
         setPeopleDetails([]);
         setError(null);
         setLoading(false);
-    }, [uniqueIds.join(',')]);
+    }, [uniqueIdsKey]);
 
     useEffect(() => {
         if (!uniqueIds.length) {
@@ -119,7 +119,7 @@ const FavoritePeopleRail = ({ peopleRefs = [] }) => {
                 name,
                 roleLabel,
                 avatarUrl,
-                internalDestination: id ? `/actors/${id}` : null,
+                internalDestination: id ? `/people/${id}` : null,
                 externalDestination: person.url || null,
             };
         });

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import PersonDetail from '../components/PersonDetail';
 import { buildPeopleUrl, buildMoviesUrl, buildUsersUrl } from '../config';
 import {
@@ -20,8 +20,10 @@ const extractFavoritePeople = (user) => {
   return [];
 };
 
-const ActorDetailPage = () => {
-  const { actorId } = useParams();
+const PeopleDetailPage = () => {
+  const navigate = useNavigate();
+  const { personId, actorId } = useParams();
+  const resolvedPersonId = personId ?? actorId ?? null;
   const [person, setPerson] = useState(null);
   const [knownForDetails, setKnownForDetails] = useState([]);
   const [error, setError] = useState(null);
@@ -43,11 +45,11 @@ const ActorDetailPage = () => {
 
   useEffect(() => {
     setFavoriteError(null);
-  }, [actorId]);
+  }, [resolvedPersonId]);
 
   useEffect(() => {
-    if (!actorId) {
-      setError('The requested actor identifier is missing.');
+    if (!resolvedPersonId) {
+      setError('The requested person identifier is missing.');
       setIsLoading(false);
       return;
     }
@@ -55,7 +57,7 @@ const ActorDetailPage = () => {
     const controller = new AbortController();
 
     const loadPerson = async () => {
-      const endpoint = buildPeopleUrl(`/people/${actorId}`);
+      const endpoint = buildPeopleUrl(`/people/${resolvedPersonId}`);
 
       try {
         setIsLoading(true);
@@ -66,18 +68,18 @@ const ActorDetailPage = () => {
         });
 
         if (response.status === 404) {
-          throw new Error('We could not find that actor in the database.');
+          throw new Error('We could not find that person in the database.');
         }
 
         if (!response.ok) {
-          throw new Error('Unable to load actor details.');
+          throw new Error('Unable to load person details.');
         }
 
         const payload = await response.json();
         setPerson(payload);
       } catch (err) {
         if (err.name !== 'AbortError') {
-          const baseMessage = err.message || 'Unknown error loading actor';
+          const baseMessage = err.message || 'Unknown error loading person';
           const hint = endpoint.startsWith('http')
             ? `Please verify the service at ${endpoint} is reachable.`
             : 'Please verify the people service is reachable through the development proxy (port 5002).';
@@ -91,7 +93,7 @@ const ActorDetailPage = () => {
     loadPerson();
 
     return () => controller.abort();
-  }, [actorId]);
+  }, [resolvedPersonId]);
 
   useEffect(() => {
     if (!person || !Array.isArray(person.movie) || person.movie.length === 0) {
@@ -170,6 +172,14 @@ const ActorDetailPage = () => {
 
   const userId = authUser?._id || authUser?.username || null;
 
+  const handleGoBack = () => {
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate('/home');
+    }
+  };
+
   const handleToggleFavorite = async () => {
     if (!userId || !person?._id) {
       setFavoriteError('Sign in to manage your favorite people.');
@@ -225,9 +235,9 @@ const ActorDetailPage = () => {
       <div className="status status--error" role="alert">
         <h1>Something went wrong.</h1>
         <p>{error}</p>
-        <Link className="status__link" to="/">
-          Back to home
-        </Link>
+        <button type="button" className="status__link" onClick={handleGoBack}>
+          Back to previous page
+        </button>
       </div>
     );
   }
@@ -236,13 +246,13 @@ const ActorDetailPage = () => {
     return (
       <div className="status status--loading" role="status">
         <div className="spinner" aria-hidden />
-        <p>Gathering actor insights...</p>
+        <p>Gathering person insights...</p>
       </div>
     );
   }
 
   return (
-    <div className="actor-detail-page">
+    <div className="person-detail-page">
       <PersonDetail
         person={person}
         knownForDetails={knownForDetails}
@@ -252,13 +262,18 @@ const ActorDetailPage = () => {
         favoriteError={favoriteError}
         canModify={Boolean(userId)}
       />
-      <div className="actor-detail-page__actions">
-        <Link to="/" className="actor-detail-page__back">
-          ← Back to home
-        </Link>
+      <div className="person-detail-page__actions">
+        <button
+          type="button"
+          className="person-detail-page__back"
+          onClick={handleGoBack}
+        >
+          Back to previous page
+        </button>
       </div>
     </div>
   );
 };
 
-export default ActorDetailPage;
+export default PeopleDetailPage;
+

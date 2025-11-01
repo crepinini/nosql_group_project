@@ -52,7 +52,13 @@
 .status__link {
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.35);
+  background: transparent;
   color: #f1f5f9;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font: inherit;
   margin-top: 0.75rem;
   padding: 0.5rem 1.4rem;
   text-decoration: none;
@@ -66,7 +72,7 @@
   outline: none;
 }
 
-.actor-detail-page {
+.person-detail-page {
   display: flex;
   flex-direction: column;
   gap: 2rem;
@@ -80,22 +86,56 @@
   padding: 3rem clamp(12rem, 4vw, 4rem) 4rem;
 }
 
-.actor-detail-page__actions {
+.person-detail-page__actions {
   display: flex;
   justify-content: flex-end;
 }
 
-.actor-detail-page__back {
+.person-detail-page__back {
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.25);
+  background: transparent;
   color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font: inherit;
   padding: 0.5rem 1.4rem;
   text-decoration: none;
   transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
 }
 
-.actor-detail-page__back:hover,
-.actor-detail-page__back:focus-visible {
+.person-detail-page__back:hover,
+.person-detail-page__back:focus-visible {
+  background: rgba(0, 180, 216, 0.25);
+  border-color: rgba(0, 180, 216, 0.45);
+  color: #fff;
+  outline: none;
+}
+
+.movie-detail-page__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.movie-detail-page__back {
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font: inherit;
+  padding: 0.5rem 1.4rem;
+  text-decoration: none;
+  transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+}
+
+.movie-detail-page__back:hover,
+.movie-detail-page__back:focus-visible {
   background: rgba(0, 180, 216, 0.25);
   border-color: rgba(0, 180, 216, 0.45);
   color: #fff;
@@ -126,3 +166,4 @@
     padding: 2.5rem 1.5rem 3rem;
   }
 }
+
