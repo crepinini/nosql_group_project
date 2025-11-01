@@ -2,9 +2,21 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { getStoredUser, subscribeToAuthChanges } from './Login/auth';
 import './Friends.css';
+import RecommendationRail from './RecommendationRail';
+
 
 export default function Friends() {
     const navigate = useNavigate();
+    // films vus par des amis
+    const [friendsWatched, setFriendsWatched] = useState([]);
+    // films que des amis regardent en ce moment
+    const [friendsWatching, setFriendsWatching] = useState([]);
+    // films que des amis prévoient de regarder
+    const [friendsPlanning, setFriendsPlanning] = useState([]);
+
+    const [loadingFriendStatus, setLoadingFriendStatus] = useState(false);
+    const [friendStatusError, setFriendStatusError] = useState(null);
+
 
     // --- AUTH USER SYNC ---
     const [authUser, setAuthUser] = useState(() => getStoredUser());
@@ -374,6 +386,203 @@ export default function Friends() {
         );
     }, [authUser, profile]);
 
+    const { watchedIds, watchingIds, planIds } = useMemo(() => {
+        const watchedSet = new Set();
+        const watchingSet = new Set();
+        const planSet = new Set();
+
+        friendsProfiles.forEach(friend => {
+            const statuses = friend.watch_statuses || {};
+
+            Object.entries(statuses).forEach(([movieId, status]) => {
+                if (!movieId) return;
+                if (status === "watched") {
+                    watchedSet.add(movieId);
+                } else if (status === "watching") {
+                    watchingSet.add(movieId);
+                } else if (status === "plan") {
+                    planSet.add(movieId);
+                }
+            });
+        });
+
+        return {
+            watchedIds: Array.from(watchedSet),
+            watchingIds: Array.from(watchingSet),
+            planIds: Array.from(planSet),
+        };
+    }, [friendsProfiles]);
+
+    function useMoviesDetails(movieIds) {
+        const [list, setList] = useState([]);
+
+        useEffect(() => {
+            if (!movieIds || movieIds.length === 0) {
+                setList([]);
+                return;
+            }
+
+            const controller = new AbortController();
+            let cancelled = false;
+
+            (async () => {
+                const results = [];
+
+                for (const movieId of movieIds) {
+                    try {
+                        const res = await fetch(`/api/movies-series/${encodeURIComponent(movieId)}`, {
+                            signal: controller.signal,
+                        });
+                        if (!res.ok) continue;
+
+                        const data = await res.json();
+                        results.push({
+                            id: movieId,
+                            title: data.title || "Untitled",
+                            poster: data.poster || data.poster_url || null,
+                            year: data.year || data.release_year || "",
+                            type: data.imdb_type || data.type || "",
+                        });
+                    } catch (err) {
+                        if (err.name !== "AbortError") {
+                            console.warn("failed to fetch movie", movieId, err);
+                        }
+                    }
+                }
+
+                if (!cancelled) {
+                    setList(results);
+                }
+            })();
+
+            return () => {
+                cancelled = true;
+                controller.abort();
+            };
+        }, [movieIds]);
+
+        return list;
+    }
+
+    const watchedList = useMoviesDetails(watchedIds);
+    const watchingList = useMoviesDetails(watchingIds);
+    const planList = useMoviesDetails(planIds);
+
+    useEffect(() => {
+        // si t'as pas d'amis => clear
+        if (!Array.isArray(friendsProfiles) || friendsProfiles.length === 0) {
+            setFriendsWatched([]);
+            setFriendsWatching([]);
+            setFriendsPlanning([]);
+            return;
+        }
+
+        let aborted = false;
+
+        (async () => {
+            try {
+                setLoadingFriendStatus(true);
+                setFriendStatusError(null);
+
+                // 1. pour chaque ami -> on va chercher son profil complet
+                const friendProfilesFull = await Promise.all(
+                    friendsProfiles.map(async (friend) => {
+                        const fid = friend._id || friend.imdb_user_id;
+                        if (!fid) return null;
+                        try {
+                            const r = await fetch(
+                                `/myprofile?user_id=${encodeURIComponent(fid)}`
+                            );
+                            if (!r.ok) return null;
+                            return await r.json();
+                        } catch (err) {
+                            console.warn("failed to fetch full friend profile", fid, err);
+                            return null;
+                        }
+                    })
+                );
+
+                // 2. agrégation des IDs par statut
+                //    watched   -> "watched"
+                //    watching  -> "watching"
+                //    planning  -> "plan"
+                const watchedIds = new Set();
+                const watchingIds = new Set();
+                const planningIds = new Set();
+
+                for (const fp of friendProfilesFull) {
+                    if (!fp || !fp.watch_statuses) continue;
+                    const ws = fp.watch_statuses; // { movieId: "watched" | "watching" | "plan" ... }
+
+                    for (const movieId of Object.keys(ws)) {
+                        const status = ws[movieId];
+                        if (status === "watched") {
+                            watchedIds.add(movieId);
+                        } else if (status === "watching") {
+                            watchingIds.add(movieId);
+                        } else if (status === "plan") {
+                            planningIds.add(movieId);
+                        }
+                    }
+                }
+
+                // 3. fetch des fiches film/série pour chaque set
+                async function fetchMoviesForSet(idSet) {
+                    const idsArr = Array.from(idSet);
+                    if (idsArr.length === 0) return [];
+
+                    const results = await Promise.all(
+                        idsArr.map(async (mid) => {
+                            try {
+                                const r = await fetch(`/api/movies-series/${encodeURIComponent(mid)}`);
+                                if (!r.ok) return null;
+                                const data = await r.json();
+                                // On garde l'id d'origine au cas où
+                                return { ...data, _id: data._id || mid };
+                            } catch (err) {
+                                console.warn("fail movie fetch", mid, err);
+                                return null;
+                            }
+                        })
+                    );
+
+                    // filtre les nulls
+                    return results.filter(Boolean);
+                }
+
+                const [watchedMovies, watchingMovies, planningMovies] = await Promise.all([
+                    fetchMoviesForSet(watchedIds),
+                    fetchMoviesForSet(watchingIds),
+                    fetchMoviesForSet(planningIds),
+                ]);
+
+                if (!aborted) {
+                    setFriendsWatched(watchedMovies);
+                    setFriendsWatching(watchingMovies);
+                    setFriendsPlanning(planningMovies);
+                }
+            } catch (err) {
+                console.error("friend status aggregation failed", err);
+                if (!aborted) {
+                    setFriendStatusError("Couldn't load what your friends are watching.");
+                    setFriendsWatched([]);
+                    setFriendsWatching([]);
+                    setFriendsPlanning([]);
+                }
+            } finally {
+                if (!aborted) {
+                    setLoadingFriendStatus(false);
+                }
+            }
+        })();
+
+        return () => {
+            aborted = true;
+        };
+    }, [friendsProfiles]);
+
+
+
     function renderFriendCardGrid(friendObj) {
         // friendObj est { id, name, location, initials } venant de sortedFriends
         const { id, name, location, initials } = friendObj;
@@ -580,6 +789,37 @@ export default function Friends() {
                         )}
                 </section>
             </div>
+            {/* FRIEND ACTIVITY RAILS */}
+            <section className="friends-section">
+                <RecommendationRail
+                    title="Your friends watched"
+                    subtitle="Recently watched by your friends"
+                    items={friendsWatched}
+                    loading={loadingFriendStatus}
+                    error={friendStatusError}
+                    emptyMessage="None of your friends logged anything as watched yet."
+                />
+
+                <RecommendationRail
+                    title="Your friends are watching"
+                    subtitle="Currently being watched"
+                    items={friendsWatching}
+                    loading={loadingFriendStatus}
+                    error={friendStatusError}
+                    emptyMessage="None of your friends are watching something right now."
+                />
+
+                <RecommendationRail
+                    title="Your friends are going to watch"
+                    subtitle="On their 'plan to watch' lists"
+                    items={friendsPlanning}
+                    loading={loadingFriendStatus}
+                    error={friendStatusError}
+                    emptyMessage="No upcoming plans from your friends yet."
+                />
+            </section>
+
         </div>
+
     );
 }
