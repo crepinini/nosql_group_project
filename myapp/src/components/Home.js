@@ -24,6 +24,8 @@ export default function Home({ filterType }) {
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedGenre, setSelectedGenre] = useState('All');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedTerm, setDebouncedTerm] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -53,11 +55,22 @@ export default function Home({ filterType }) {
     fetchMovies();
   }, [filterType]);
 
+  useEffect(() => {
+    const handle = setTimeout(() => {
+      setDebouncedTerm(searchTerm.trim());
+    }, 350);
+    return () => clearTimeout(handle);
+  }, [searchTerm]);
+
   const genres = ['All', ...new Set(movies.flatMap((m) => m.genres || []))];
   const filteredMovies =
     selectedGenre === 'All'
       ? movies
       : movies.filter((m) => m.genres && m.genres.includes(selectedGenre));
+
+  const visibleMovies = filteredMovies.filter((m) =>
+    m.title.toLowerCase().includes(debouncedTerm.toLowerCase())
+  );
 
   return (
     <div className="home-page">
@@ -87,8 +100,28 @@ export default function Home({ filterType }) {
               </select>
             </div>
 
+            <form
+              className="home-page__controls"
+              role="search"
+              onSubmit={(event) => event.preventDefault()}
+            >
+              <label className="home-page__search-label" htmlFor="home-search">
+                Search movies/series
+              </label>
+              <input
+                id="home-search"
+                className="home-page__search-input"
+                type="search"
+                placeholder="Search by title"
+                value={searchTerm}
+                onChange={(event) =>{
+                  setSearchTerm(event.target.value);
+                }}
+              />
+            </form>
+
             <div className="home-rail-movies">
-              {filteredMovies.map((movie) => {
+              {visibleMovies.map((movie) => {
                 const runtimeLabel = formatRuntime(movie.duration);
                 return (
                   <div
