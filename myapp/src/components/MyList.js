@@ -12,8 +12,55 @@ const FALLBACK_POSTER =
 const FALLBACK_PROFILE =
   'https://via.placeholder.com/400x600.png?text=Profile+Unavailable';
 
-const PAGE_SIZE = 20;
-const FRIENDS_PAGE_SIZE = 5;
+const PAGE_SIZE = 10;
+const NAV_PAGE_SIZE = PAGE_SIZE;
+
+const buildPageButtons = (page, totalPages) => {
+  if (totalPages <= 1) {
+    return [{ type: 'page', value: 1 }];
+  }
+
+  if (totalPages <= 7) {
+    return Array.from({ length: totalPages }, (_, index) => ({
+      type: 'page',
+      value: index + 1,
+    }));
+  }
+
+  const candidates = new Set([1, totalPages]);
+  for (let offset = -1; offset <= 1; offset += 1) {
+    candidates.add(page + offset);
+  }
+
+  if (page <= 3) {
+    candidates.add(2);
+    candidates.add(3);
+    candidates.add(4);
+  }
+
+  if (page >= totalPages - 2) {
+    candidates.add(totalPages - 1);
+    candidates.add(totalPages - 2);
+    candidates.add(totalPages - 3);
+  }
+
+  const sortedPages = Array.from(candidates)
+    .filter((value) => value >= 1 && value <= totalPages)
+    .sort((a, b) => a - b);
+
+  const buttons = [];
+  let previous = null;
+
+  sortedPages.forEach((value) => {
+    if (previous !== null && value - previous > 1) {
+      buttons.push({ type: 'ellipsis', key: `ellipsis-${previous}-${value}` });
+    }
+    buttons.push({ type: 'page', value });
+    previous = value;
+  });
+
+  return buttons;
+};
 
 const formatRuntime = (duration) => {
   if (!duration) {
@@ -148,6 +195,8 @@ const MyList = () => {
   const [friendListsLoading, setFriendListsLoading] = useState(false);
   const [friendListsError, setFriendListsError] = useState(null);
   const [friendListsRefreshKey, setFriendListsRefreshKey] = useState(0);
+  const [listNavPage, setListNavPage] = useState(1);
+  const [friendNavPage, setFriendNavPage] = useState(1);
 
   const [createForm, setCreateForm] = useState({
     name: '',
@@ -382,6 +431,62 @@ const MyList = () => {
     });
   }, [friendLists, friendSearch]);
 
+  const listNavPageCount = useMemo(() => {
+    const total = lists.length;
+    return total ? Math.ceil(total / NAV_PAGE_SIZE) : 1;
+  }, [lists]);
+
+  const paginatedLists = useMemo(() => {
+    if (!lists.length) {
+      return [];
+    }
+    const start = (listNavPage - 1) * NAV_PAGE_SIZE;
+    return lists.slice(start, start + NAV_PAGE_SIZE);
+  }, [lists, listNavPage]);
+
+  const listNavButtons = useMemo(
+    () => buildPageButtons(listNavPage, listNavPageCount),
+    [listNavPage, listNavPageCount],
+  );
+
+  const listNavSummary = useMemo(() => {
+    if (!lists.length) {
+      return '';
+    }
+    const start = (listNavPage - 1) * NAV_PAGE_SIZE + 1;
+    const displayed = Math.max(paginatedLists.length, 1);
+    const end = Math.min(start + displayed - 1, lists.length);
+    return `Showing ${start}-${end} of ${lists.length} lists`;
+  }, [lists, listNavPage, paginatedLists.length]);
+
+  const friendNavPageCount = useMemo(() => {
+    const total = filteredFriends.length;
+    return total ? Math.ceil(total / NAV_PAGE_SIZE) : 1;
+  }, [filteredFriends]);
+
+  const paginatedFriends = useMemo(() => {
+    if (!filteredFriends.length) {
+      return [];
+    }
+    const start = (friendNavPage - 1) * NAV_PAGE_SIZE;
+    return filteredFriends.slice(start, start + NAV_PAGE_SIZE);
+  }, [filteredFriends, friendNavPage]);
+
+  const friendNavButtons = useMemo(
+    () => buildPageButtons(friendNavPage, friendNavPageCount),
+    [friendNavPage, friendNavPageCount],
+  );
+
+  const friendNavSummary = useMemo(() => {
+    if (!filteredFriends.length) {
+      return '';
+    }
+    const start = (friendNavPage - 1) * NAV_PAGE_SIZE + 1;
+    const displayed = Math.max(paginatedFriends.length, 1);
+    const end = Math.min(start + displayed - 1, filteredFriends.length);
+    return `Showing ${start}-${end} of ${filteredFriends.length} friends`;
+  }, [filteredFriends, friendNavPage, paginatedFriends.length]);
+
   useEffect(() => {
     if (selectedOwner === 'self') {
       return;
@@ -415,6 +520,54 @@ const MyList = () => {
       setSearchTerm('');
     }
   }, [selectedOwner, searchTerm]);
+
+  useEffect(() => {
+    const maxPage = Math.max(1, Math.ceil(lists.length / NAV_PAGE_SIZE));
+    if (listNavPage > maxPage) {
+      setListNavPage(maxPage);
+    }
+  }, [lists, listNavPage]);
+
+  useEffect(() => {
+    const maxPage = Math.max(1, Math.ceil(filteredFriends.length / NAV_PAGE_SIZE));
+    if (friendNavPage > maxPage) {
+      setFriendNavPage(maxPage);
+    }
+  }, [filteredFriends, friendNavPage]);
+
+  useEffect(() => {
+    if (selectedOwner !== 'self' || !selectedListId) {
+      return;
+    }
+    const index = lists.findIndex((entry) => entry.list_id === selectedListId);
+    if (index === -1) {
+      return;
+    }
+    const targetPage = Math.floor(index / NAV_PAGE_SIZE) + 1;
+    if (targetPage !== listNavPage) {
+      setListNavPage(targetPage);
+    }
+  }, [selectedOwner, selectedListId, lists, listNavPage]);
+
+  useEffect(() => {
+    if (selectedOwner === 'self') {
+      return;
+    }
+    const index = filteredFriends.findIndex(
+      (entry) => entry.friend_id === selectedOwner,
+    );
+    if (index === -1) {
+      return;
+    }
+    const targetPage = Math.floor(index / NAV_PAGE_SIZE) + 1;
+    if (targetPage !== friendNavPage) {
+      setFriendNavPage(targetPage);
+    }
+  }, [selectedOwner, filteredFriends, friendNavPage]);
+
+  useEffect(() => {
+    setFriendNavPage(1);
+  }, [friendSearch]);
 
 const catalogById = useMemo(() => {
   const map = new Map();
@@ -459,7 +612,7 @@ const catalogById = useMemo(() => {
   const selectedListType = (selectedList?.type || 'movies').toLowerCase();
   const selectedListNoun = selectedListType === 'people' ? 'people' : 'titles';
   const searchLabel =
-    selectedListType === 'people' ? 'Add cast & crew' : 'Add movies & series';
+    selectedListType === 'people' ? 'Add cast & crew' : 'Add movies or series';
   const searchPlaceholder =
     selectedListType === 'people' ? 'Search by name or profession...' : 'Search the catalog...';
   const searchSourceLoading = selectedListType === 'people' ? peopleLoading : catalogLoading;
@@ -471,6 +624,13 @@ const catalogById = useMemo(() => {
     selectedFriend?.username ||
     selectedFriend?.friend_id ||
     '';
+  const selectedFriendProfileIdRaw =
+    selectedFriend?.friend_id ||
+    selectedFriend?.username ||
+    '';
+  const selectedFriendProfileId = selectedFriendProfileIdRaw
+    ? String(selectedFriendProfileIdRaw).trim()
+    : '';
   const visibilityText = selectedList
     ? selectedList.is_public
       ? 'Public list'
@@ -542,51 +702,10 @@ const catalogById = useMemo(() => {
     return selectedItems.slice(start, start + PAGE_SIZE);
   }, [selectedItems, page]);
 
-  const pageButtons = useMemo(() => {
-    if (totalPages <= 1) {
-      return [{ type: 'page', value: 1 }];
-    }
-    if (totalPages <= 7) {
-      return Array.from({ length: totalPages }, (_, index) => ({
-        type: 'page',
-        value: index + 1,
-      }));
-    }
-
-    const candidates = new Set([1, totalPages]);
-    for (let offset = -1; offset <= 1; offset += 1) {
-      candidates.add(page + offset);
-    }
-
-    if (page <= 3) {
-      candidates.add(2);
-      candidates.add(3);
-      candidates.add(4);
-    }
-
-    if (page >= totalPages - 2) {
-      candidates.add(totalPages - 1);
-      candidates.add(totalPages - 2);
-      candidates.add(totalPages - 3);
-    }
-
-    const sortedPages = Array.from(candidates)
-      .filter((value) => value >= 1 && value <= totalPages)
-      .sort((a, b) => a - b);
-
-    const buttons = [];
-    let previous = null;
-
-    sortedPages.forEach((value) => {
-      if (previous !== null && value - previous > 1) {
-        buttons.push({ type: 'ellipsis', key: `ellipsis-${previous}-${value}` });
-      }
-      buttons.push({ type: 'page', value });
-      previous = value;
-    });
-
-    return buttons;
-  }, [totalPages, page]);
+  const pageButtons = useMemo(
+    () => buildPageButtons(page, totalPages),
+    [page, totalPages],
+  );
 
   const pageSummary = useMemo(() => {
     const total = selectedItems.length;
@@ -1060,34 +1179,95 @@ const catalogById = useMemo(() => {
                 You haven&apos;t created any custom lists yet.
               </p>
             ) : (
-              <ul>
-                {lists.map((entry) => (
-                  <li key={entry.list_id}>
+              <>
+                <ul>
+                  {paginatedLists.map((entry) => (
+                    <li key={entry.list_id}>
+                      <button
+                        type="button"
+                        className={`mylist-nav__item${
+                          selectedOwner === 'self' && entry.list_id === selectedListId
+                            ? ' mylist-nav__item--active'
+                            : ''
+                        }`}
+                        onClick={() => {
+                          setSelectedOwner('self');
+                          setSelectedListId(entry.list_id);
+                          setEditingDetails(false);
+                          setDetailsError('');
+                          setPage(1);
+                        }}
+                      >
+                        <span className="mylist-nav__item-title">
+                          {entry.name || 'Untitled list'}
+                        </span>
+                        <span className="mylist-nav__item-count">
+                          {(entry.items || []).length} titles
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+                <div
+                  className="mylist-pagination mylist-pagination--compact"
+                  aria-label="Your lists pagination controls"
+                >
+                  <div
+                    className="mylist-pagination__pager"
+                    role="group"
+                    aria-label="Select list page"
+                  >
                     <button
                       type="button"
-                      className={`mylist-nav__item${
-                        selectedOwner === 'self' && entry.list_id === selectedListId
-                          ? ' mylist-nav__item--active'
-                          : ''
-                      }`}
-                      onClick={() => {
-                        setSelectedOwner('self');
-                        setSelectedListId(entry.list_id);
-                        setEditingDetails(false);
-                        setDetailsError('');
-                        setPage(1);
-                      }}
+                      className="mylist-pagination__button"
+                      onClick={() => setListNavPage((prev) => Math.max(1, prev - 1))}
+                      disabled={listNavPage <= 1}
                     >
-                      <span className="mylist-nav__item-title">
-                        {entry.name || 'Untitled list'}
-                      </span>
-                      <span className="mylist-nav__item-count">
-                        {(entry.items || []).length} titles
-                      </span>
+                      Prev
                     </button>
-                  </li>
-                ))}
-              </ul>
+                    {listNavButtons.map((entry) => {
+                      if (entry.type === 'ellipsis') {
+                        return (
+                          <span
+                            key={entry.key}
+                            className="mylist-pagination__ellipsis"
+                            aria-hidden="true"
+                          >
+                            &hellip;
+                          </span>
+                        );
+                      }
+                      const pageNumber = entry.value;
+                      return (
+                        <button
+                          key={`your-lists-${pageNumber}`}
+                          type="button"
+                          className={`mylist-pagination__button ${
+                            pageNumber === listNavPage ? 'mylist-pagination__button--active' : ''
+                          }`}
+                          onClick={() => setListNavPage(pageNumber)}
+                          aria-current={pageNumber === listNavPage ? 'page' : undefined}
+                        >
+                          {pageNumber}
+                        </button>
+                      );
+                    })}
+                    <button
+                      type="button"
+                      className="mylist-pagination__button"
+                      onClick={() =>
+                        setListNavPage((prev) => Math.min(listNavPageCount, prev + 1))
+                      }
+                      disabled={listNavPage >= listNavPageCount}
+                    >
+                      Next
+                    </button>
+                  </div>
+                  <p className="mylist-pagination__summary">
+                    {listNavSummary || `Page ${listNavPage} of ${listNavPageCount}`}
+                  </p>
+                </div>
+              </>
             )}
           </div>
 
@@ -1119,53 +1299,118 @@ const catalogById = useMemo(() => {
                 No friends match your search.
               </p>
             ) : (
-              <ul className="mylist-friends__list">
-                {filteredFriends.map((friend) => {
-                  const friendName =
-                    friend.friend_name || friend.username || friend.friend_id;
-                  return (
-                    <li key={friend.friend_id} className="mylist-friends__friend">
-                      <div className="mylist-friends__friend-header">
-                        <span className="mylist-friends__friend-name">{friendName}</span>
-                        <span className="mylist-friends__friend-count">
-                          {friend.lists.length} list{friend.lists.length === 1 ? '' : 's'}
-                        </span>
-                      </div>
-                      <ul className="mylist-friends__lists">
-                        {friend.lists.map((list) => {
-                          const isActive =
-                            selectedOwner === friend.friend_id &&
-                            selectedListId === list.list_id;
-                          return (
-                            <li key={`${friend.friend_id}-${list.list_id}`}>
-                              <button
-                                type="button"
-                                className={`mylist-friends__item${
-                                  isActive ? ' mylist-friends__item--active' : ''
-                                }`}
-                                onClick={() => {
-                                  setSelectedOwner(friend.friend_id);
-                                  setSelectedListId(list.list_id);
-                                  setEditingDetails(false);
-                                  setDetailsError('');
-                                  setPage(1);
-                                }}
-                              >
-                                <span className="mylist-friends__item-title">
-                                  {list.name || 'Untitled list'}
-                                </span>
-                                <span className="mylist-friends__item-count">
-                                  {(list.items || []).length} titles
-                                </span>
-                              </button>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    </li>
-                  );
-                })}
-              </ul>
+              <>
+                <ul className="mylist-friends__list">
+                  {paginatedFriends.map((friend) => {
+                    const friendName =
+                      friend.friend_name || friend.username || friend.friend_id;
+                    return (
+                      <li key={friend.friend_id} className="mylist-friends__friend">
+                        <div className="mylist-friends__friend-header">
+                          <span className="mylist-friends__friend-name">{friendName}</span>
+                          <span className="mylist-friends__friend-count">
+                            {friend.lists.length} list{friend.lists.length === 1 ? '' : 's'}
+                          </span>
+                        </div>
+                        <ul className="mylist-friends__lists">
+                          {friend.lists.map((list) => {
+                            const isActive =
+                              selectedOwner === friend.friend_id &&
+                              selectedListId === list.list_id;
+                            return (
+                              <li key={`${friend.friend_id}-${list.list_id}`}>
+                                <button
+                                  type="button"
+                                  className={`mylist-friends__item${
+                                    isActive ? ' mylist-friends__item--active' : ''
+                                  }`}
+                                  onClick={() => {
+                                    setSelectedOwner(friend.friend_id);
+                                    setSelectedListId(list.list_id);
+                                    setEditingDetails(false);
+                                    setDetailsError('');
+                                    setPage(1);
+                                  }}
+                                >
+                                  <span className="mylist-friends__item-title">
+                                    {list.name || 'Untitled list'}
+                                  </span>
+                                  <span className="mylist-friends__item-count">
+                                    {(list.items || []).length} titles
+                                  </span>
+                                </button>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <div
+                  className="mylist-pagination mylist-pagination--compact"
+                  aria-label="Friends pagination controls"
+                >
+                  <div
+                    className="mylist-pagination__pager"
+                    role="group"
+                    aria-label="Select friend page"
+                  >
+                    <button
+                      type="button"
+                      className="mylist-pagination__button"
+                      onClick={() => setFriendNavPage((prev) => Math.max(1, prev - 1))}
+                      disabled={friendNavPage <= 1}
+                    >
+                      Prev
+                    </button>
+                    {friendNavButtons.map((entry) => {
+                      if (entry.type === 'ellipsis') {
+                        return (
+                          <span
+                            key={entry.key}
+                            className="mylist-pagination__ellipsis"
+                            aria-hidden="true"
+                          >
+                            &hellip;
+                          </span>
+                        );
+                      }
+                      const pageNumber = entry.value;
+                      return (
+                        <button
+                          key={`friend-lists-${pageNumber}`}
+                          type="button"
+                          className={`mylist-pagination__button ${
+                            pageNumber === friendNavPage
+                              ? 'mylist-pagination__button--active'
+                              : ''
+                          }`}
+                          onClick={() => setFriendNavPage(pageNumber)}
+                          aria-current={pageNumber === friendNavPage ? 'page' : undefined}
+                        >
+                          {pageNumber}
+                        </button>
+                      );
+                    })}
+                    <button
+                      type="button"
+                      className="mylist-pagination__button"
+                      onClick={() =>
+                        setFriendNavPage((prev) =>
+                          Math.min(friendNavPageCount, prev + 1),
+                        )
+                      }
+                      disabled={friendNavPage >= friendNavPageCount}
+                    >
+                      Next
+                    </button>
+                  </div>
+                  <p className="mylist-pagination__summary">
+                    {friendNavSummary || `Page ${friendNavPage} of ${friendNavPageCount}`}
+                  </p>
+                </div>
+              </>
             )}
           </div>
         </aside>
@@ -1294,8 +1539,26 @@ const catalogById = useMemo(() => {
                           </button>
                         </>
                       ) : (
-                        <p className="mylist-detail__read-only">
-                        </p>
+                        <div className="mylist-detail__read-only-group">
+                          <p className="mylist-detail__read-only">
+                            {selectedFriendName
+                              ? `Viewing ${selectedFriendName}'s public list.`
+                              : 'Viewing a public friend list.'}
+                          </p>
+                          {selectedFriendProfileId ? (
+                            <button
+                              type="button"
+                              className="mylist-detail__button mylist-detail__button--ghost mylist-detail__button--profile"
+                              onClick={() =>
+                                navigate(
+                                  `/profile?user_id=${encodeURIComponent(selectedFriendProfileId)}`,
+                                )
+                              }
+                            >
+                              View friend's profile
+                            </button>
+                          ) : null}
+                        </div>
                       )}
                     </div>
                   </>
