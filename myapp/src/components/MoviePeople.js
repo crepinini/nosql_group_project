@@ -145,10 +145,12 @@ const MoviePeople = ({ movie }) => {
               }
 
               const payload = await response.json();
-              const person =
-                Array.isArray(payload) && payload.length > 0
-                  ? payload[0]
-                  : null;
+              const entries = Array.isArray(payload)
+                ? payload
+                : Array.isArray(payload?.results)
+                ? payload.results
+                : [];
+              const person = entries.length > 0 ? entries[0] : null;
               return [name, person];
             } catch (fetchError) {
               console.warn(fetchError);
