@@ -374,6 +374,36 @@ export default function Profile() {
     return () => controller.abort();
   }, [profile?._id]);
 
+  const sortedFriendsProfiles = useMemo(() => {
+    if (!Array.isArray(friendsProfiles)) return [];
+
+    // on fabrique un objet propre avec id + name pour pouvoir trier proprement
+    const cleaned = friendsProfiles.map((f) => {
+      const id = f._id || f.imdb_user_id || "";
+      const name = f.full_name || f.username || "Unknown User";
+      const city = f.location_city || "";
+      const country = f.location_country || "";
+      return {
+        ...f,
+        _id: id,
+        __displayName: name,
+        __city: city,
+        __country: country,
+      };
+    });
+
+    // tri alphabétique insensible à la casse
+    cleaned.sort((a, b) => {
+      const an = a.__displayName.toLowerCase();
+      const bn = b.__displayName.toLowerCase();
+      if (an < bn) return -1;
+      if (an > bn) return 1;
+      return 0;
+    });
+
+    return cleaned;
+  }, [friendsProfiles]);
+
   // Enrich reviews with movie titles (optional, once per user/profile id)
   useEffect(() => {
     if (!profile || !profile._id) return;
@@ -1193,16 +1223,16 @@ export default function Profile() {
             <h2 className="profile-section-title">Friends</h2>
           </div>
 
-          {friendsProfiles.length === 0 ? (
+          {sortedFriendsProfiles.length === 0 ? (
             <p className="profile-empty">No friends yet</p>
           ) : (
             <div className="friends-rail">
-              {friendsProfiles.map((friend) => {
-                const id = friend._id || friend.imdb_user_id;
-                const name =
-                  friend.full_name || friend.username || 'Unknown User';
-                const city = friend.location_city || '';
-                const country = friend.location_country || '';
+              {sortedFriendsProfiles.map((friend) => {
+                const id = friend._id; // déjà normalisé dans useMemo
+                const name = friend.__displayName;
+                const city = friend.__city;
+                const country = friend.__country;
+
                 const initials = name
                   .split(' ')
                   .map((n) => n[0])
@@ -1212,13 +1242,12 @@ export default function Profile() {
 
                 return (
                   <div key={id} className="friend-card">
-                    {/* bouton supprimer visible seulement sur ton propre profil */}
                     {authUser._id === profile._id && (
                       <button
                         className="friend-delete-btn"
                         title="Remove friend"
                         onClick={(e) => {
-                          e.stopPropagation(); // évite d'ouvrir le profil en cliquant sur la croix
+                          e.stopPropagation();
                           handleRemoveFriendDirect(id);
                         }}
                       >
@@ -1248,7 +1277,6 @@ export default function Profile() {
                     </div>
                   </div>
                 );
-
               })}
             </div>
           )}
