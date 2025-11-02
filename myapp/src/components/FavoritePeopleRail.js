@@ -16,11 +16,17 @@ const buildAvatarUrl = (name, photoUrl) => {
     )}&background=023047&color=ffffff&size=256&length=2`;
 };
 
-const FavoritePeopleRail = ({ peopleRefs = [] }) => {
+const FavoritePeopleRail = ({
+    peopleRefs = [],
+    titleOverride,
+    subtitleOverride,
+    hideGroupHeader = false,
+}) => {
     const [peopleDetails, setPeopleDetails] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
+    // 1. dédupe les IDs
     const uniqueIds = useMemo(() => {
         if (!Array.isArray(peopleRefs)) return [];
         const seen = new Set();
@@ -34,14 +40,17 @@ const FavoritePeopleRail = ({ peopleRefs = [] }) => {
             });
     }, [peopleRefs]);
 
+    // clé mémo juste pour reset quand la liste change
     const uniqueIdsKey = useMemo(() => uniqueIds.join(','), [uniqueIds]);
 
+    // reset état quand la liste change
     useEffect(() => {
         setPeopleDetails([]);
         setError(null);
         setLoading(false);
     }, [uniqueIdsKey]);
 
+    // fetch des gens
     useEffect(() => {
         if (!uniqueIds.length) {
             setPeopleDetails([]);
@@ -82,7 +91,7 @@ const FavoritePeopleRail = ({ peopleRefs = [] }) => {
                 if (!cancelled) {
                     console.error(err);
                     setError(
-                        'Unable to load your favorite crew/cast. Some info may be missing.',
+                        'Unable to load favorite crew/cast. Some info may be missing.',
                     );
                 }
             } finally {
@@ -98,8 +107,8 @@ const FavoritePeopleRail = ({ peopleRefs = [] }) => {
         };
     }, [uniqueIds]);
 
+    // massage des données pour l'affichage
     const displayPeople = useMemo(() => {
-
         return peopleDetails.map((person) => {
             const id = person._id;
             const name =
@@ -125,16 +134,25 @@ const FavoritePeopleRail = ({ peopleRefs = [] }) => {
         });
     }, [peopleDetails]);
 
+    // titres dynamiques
+    const headerTitle =
+        titleOverride || 'Favorite Crew & Cast';
+    const headerSubtitle =
+        subtitleOverride ||
+        'Your go-to actors, directors and storytellers';
+
     return (
         <section
             className="movie-people"
             aria-labelledby="favorite-people-heading"
         >
+            {/* HEADER GLOBAL DE LA SECTION */}
             <div className="movie-people__header">
-                <h2 id="favorite-people-heading">Favorite Crew &amp; Cast</h2>
-                <p>Your go-to actors, directors and storytellers</p>
+                <h2 id="favorite-people-heading">{headerTitle}</h2>
+                <p>{headerSubtitle}</p>
             </div>
 
+            {/* états */}
             {error ? (
                 <div className="movie-people__status movie-people__status--error">
                     {error}
@@ -143,21 +161,24 @@ const FavoritePeopleRail = ({ peopleRefs = [] }) => {
 
             {loading ? (
                 <div className="movie-people__status" role="status">
-                    Loading your favorites…
+                    Loading favorites…
                 </div>
             ) : null}
 
             {!loading && !error && displayPeople.length === 0 ? (
                 <div className="movie-people__status movie-people__status--empty">
-                    You don’t have any favorite people yet
+                    No favorite people yet
                 </div>
             ) : null}
 
+            {/* LISTE DES PERSONNES */}
             {displayPeople.length > 0 ? (
                 <div className="movie-people__group" key="favorite-people-group">
-                    <div className="movie-people__group-header">
-                        <h3>People you follow</h3>
-                    </div>
+                    {!hideGroupHeader && (
+                        <div className="movie-people__group-header">
+                            <h3>People you follow</h3>
+                        </div>
+                    )}
 
                     <div className="movie-people__list" role="list">
                         {displayPeople.map(

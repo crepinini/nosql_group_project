@@ -3,6 +3,7 @@ import { useNavigate, Navigate } from 'react-router-dom';
 import { getStoredUser, subscribeToAuthChanges } from './Login/auth';
 import './Friends.css';
 import RecommendationRail from './RecommendationRail';
+import FavoritePeopleRail from './FavoritePeopleRail';
 
 
 export default function Friends() {
@@ -252,6 +253,100 @@ export default function Friends() {
             controller.abort();
         };
     }, [searchQuery]);
+    // --- AGGREGATE FRIENDS' FAVORITES ---
+    const [friendsFavMovies, setFriendsFavMovies] = useState([]);
+    const [friendsFavPeople, setFriendsFavPeople] = useState([]);
+
+    useEffect(() => {
+        if (!Array.isArray(friendsProfiles) || friendsProfiles.length === 0) {
+            setFriendsFavMovies([]);
+            setFriendsFavPeople([]);
+            return;
+        }
+
+        const controller = new AbortController();
+        (async () => {
+            try {
+                const movieSet = new Set();
+                const peopleSet = new Set();
+
+                for (const friend of friendsProfiles) {
+                    // récup profil complet (pour avoir les favoris)
+                    const fid = friend._id || friend.imdb_user_id;
+                    if (!fid) continue;
+                    try {
+                        const res = await fetch(`/myprofile?user_id=${encodeURIComponent(fid)}`, {
+                            signal: controller.signal,
+                        });
+                        if (!res.ok) continue;
+                        const full = await res.json();
+
+                        // movies
+                        const favMovies = full.favorites_movies || [];
+                        for (const m of favMovies) {
+                            const id = typeof m === "string" ? m : m?._id;
+                            if (id) movieSet.add(id);
+                        }
+
+                        // people
+                        const favPeople = full.favorites_people || [];
+                        for (const p of favPeople) {
+                            const id = typeof p === "string" ? p : p?._id;
+                            if (id) peopleSet.add(id);
+                        }
+                    } catch {
+                        continue;
+                    }
+                }
+
+                // fetch movie & people details
+                async function fetchMovies(ids) {
+                    const results = await Promise.all(
+                        ids.map(async (id) => {
+                            try {
+                                const r = await fetch(`/api/movies-series/${id}`);
+                                if (!r.ok) return null;
+                                return await r.json();
+                            } catch {
+                                return null;
+                            }
+                        })
+                    );
+                    return results.filter(Boolean);
+                }
+
+                async function fetchPeople(ids) {
+                    const results = await Promise.all(
+                        ids.map(async (id) => {
+                            try {
+                                const r = await fetch(`/api/people/${id}`);
+                                if (!r.ok) return null;
+                                return await r.json();
+                            } catch {
+                                return null;
+                            }
+                        })
+                    );
+                    return results.filter(Boolean);
+                }
+
+                const [moviesData, peopleData] = await Promise.all([
+                    fetchMovies(Array.from(movieSet)),
+                    fetchPeople(Array.from(peopleSet)),
+                ]);
+
+                setFriendsFavMovies(moviesData);
+                setFriendsFavPeople(peopleData);
+            } catch (err) {
+                console.error("Failed to aggregate friends favorites", err);
+                setFriendsFavMovies([]);
+                setFriendsFavPeople([]);
+            }
+        })();
+
+        return () => controller.abort();
+    }, [friendsProfiles]);
+
 
     // --- REQUEST MAPS (pending requests) ---
     const [requestSentMap, setRequestSentMap] = useState({});
@@ -792,6 +887,14 @@ export default function Friends() {
             {/* FRIEND ACTIVITY RAILS */}
             <section className="friends-section">
                 <RecommendationRail
+                    title="Friends’ Favorite Movies & Series"
+                    subtitle="What your friends love the most"
+                    items={friendsFavMovies}
+                    loading={loadingFriends}
+                    error={null}
+                    emptyMessage="Your friends haven’t added any favorites yet."
+                />
+                <RecommendationRail
                     title="Your friends watched"
                     subtitle="Recently watched by your friends"
                     items={friendsWatched}
@@ -818,6 +921,18 @@ export default function Friends() {
                     emptyMessage="No upcoming plans from your friends yet."
                 />
             </section>
+
+            <section className="friends-favorites">
+
+                <FavoritePeopleRail
+                    titleOverride="Friends’ Favorite People (Crew & Cast)"
+                    subtitleOverride="Actors, directors, and creators your friends love"
+                    peopleRefs={
+                        friendsFavPeople.map(p => ({ _id: p._id || p.id || p.person_id }))
+                    }
+                />
+            </section>
+
 
         </div>
 
