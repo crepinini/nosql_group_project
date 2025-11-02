@@ -12,6 +12,7 @@ import Friends from './pages/Friends';
 import Home from './components/Home';
 import Login from './components/Login';
 import './App.css';
+import WatchListPage from './pages/WatchListPage';
 
 const NotFound = () => (
   <div className="status status--error" role="alert">
@@ -43,6 +44,7 @@ function App() {
             <Route path="/movies-series/:movieId" element={<MovieDetailPage />} />
             <Route path="/recommendations" element={<RecommendationsPage />} />
             <Route path="/my-lists" element={<MyListPage />} />
+            <Route path="/watchlist" element={<WatchListPage />} />
             <Route path="/login" element={<Login />} />
             <Route path="/friends" element={<Friends />} />
             <Route path="*" element={<NotFound />} />

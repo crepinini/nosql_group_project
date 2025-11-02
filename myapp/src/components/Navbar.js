@@ -38,6 +38,7 @@ const Navbar = () => {
         <Link to="/crew">Cast &amp; Crew</Link>
         <Link to="/recommendations">Recommendations</Link>
         <Link to="/my-lists">MyLists</Link>
+        <Link to="/watchlist">WatchList</Link>
         <Link to="/friends">MyFriends</Link>
         <Link to="/profile">MyProfile</Link>
       </nav>
