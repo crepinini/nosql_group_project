@@ -1,0 +1,17 @@
+.watchlist-rail__scroller {
+  display: flex;
+  overflow-x: auto;
+  gap: 1.5rem;
+  padding-bottom: 0.5rem;
+  scrollbar-width: thin;
+  flex-wrap: nowrap; 
+}
+
+.watchlist-rail__scroller::-webkit-scrollbar {
+  height: 8px;
+}
+
+.watchlist-rail__scroller::-webkit-scrollbar-thumb {
+  background-color: rgba(0,180,216,0.6);
+  border-radius: 4px;
+}
