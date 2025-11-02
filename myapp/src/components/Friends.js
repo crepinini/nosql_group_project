@@ -5,9 +5,12 @@ import './Friends.css';
 import RecommendationRail from './RecommendationRail';
 import FavoritePeopleRail from './FavoritePeopleRail';
 
-
 export default function Friends() {
     const navigate = useNavigate();
+
+    // 👇 base de l'API users.py (Flask)
+    const USERS_API_BASE = 'http://localhost:5001'; // <-- CHANGEMENT
+
     // films vus par des amis
     const [friendsWatched, setFriendsWatched] = useState([]);
     // films que des amis regardent en ce moment
@@ -17,7 +20,6 @@ export default function Friends() {
 
     const [loadingFriendStatus, setLoadingFriendStatus] = useState(false);
     const [friendStatusError, setFriendStatusError] = useState(null);
-
 
     // --- AUTH USER SYNC ---
     const [authUser, setAuthUser] = useState(() => getStoredUser());
@@ -50,7 +52,7 @@ export default function Friends() {
                 setLoadingProfile(true);
 
                 const res = await fetch(
-                    `/myprofile?user_id=${encodeURIComponent(userId)}`,
+                    `${USERS_API_BASE}/myprofile?user_id=${encodeURIComponent(userId)}`, // <-- CHANGEMENT
                     { signal: controller.signal }
                 );
 
@@ -71,7 +73,7 @@ export default function Friends() {
         })();
 
         return () => controller.abort();
-    }, [authUser]);
+    }, [authUser, USERS_API_BASE]); // <-- CHANGEMENT (ajoute USERS_API_BASE en dep)
 
     // --- LOAD FRIEND DETAILS (from profile.friends list) ---
     const [friendsProfiles, setFriendsProfiles] = useState([]);
@@ -99,9 +101,10 @@ export default function Friends() {
                         if (!id) return null;
 
                         try {
-                            const res = await fetch(`/users/${encodeURIComponent(id)}`, {
-                                signal: controller.signal,
-                            });
+                            const res = await fetch(
+                                `${USERS_API_BASE}/users/${encodeURIComponent(id)}`, // <-- CHANGEMENT
+                                { signal: controller.signal },
+                            );
                             if (!res.ok) return null;
                             return await res.json();
                         } catch (err) {
@@ -125,7 +128,7 @@ export default function Friends() {
         })();
 
         return () => controller.abort();
-    }, [profile?.friends]);
+    }, [profile?.friends, USERS_API_BASE]); // <-- CHANGEMENT
 
     // --- SORT FRIENDS ALPHABETICALLY FOR DISPLAY ---
     const sortedFriends = useMemo(() => {
@@ -147,7 +150,7 @@ export default function Friends() {
 
                 return { id, name, location, initials };
             })
-            .filter((f) => f.id && f.name); // évite les trous vides
+            .filter((f) => f.id && f.name);
 
         cleaned.sort((a, b) => {
             const an = a.name.toLowerCase();
@@ -168,7 +171,7 @@ export default function Friends() {
 
         try {
             const res = await fetch(
-                `/users/${authUser._id}/friends/${friendId}`,
+                `${USERS_API_BASE}/users/${authUser._id}/friends/${friendId}`, // <-- CHANGEMENT
                 { method: 'DELETE' }
             );
 
@@ -179,7 +182,9 @@ export default function Friends() {
             }
 
             // update local ui
-            setFriendsProfiles((prev) => prev.filter((f) => (f._id || f.imdb_user_id) !== friendId));
+            setFriendsProfiles((prev) =>
+                prev.filter((f) => (f._id || f.imdb_user_id) !== friendId)
+            );
 
             setProfile((prev) => {
                 if (!prev) return prev;
@@ -220,7 +225,7 @@ export default function Friends() {
                 setSearchError(null);
 
                 const res = await fetch(
-                    `/users?q=${encodeURIComponent(q)}&limit=${encodeURIComponent(50)}`,
+                    `${USERS_API_BASE}/users?q=${encodeURIComponent(q)}&limit=${encodeURIComponent(50)}`, // <-- CHANGEMENT
                     { signal: controller.signal }
                 );
 
@@ -252,7 +257,8 @@ export default function Friends() {
             clearTimeout(timer);
             controller.abort();
         };
-    }, [searchQuery]);
+    }, [searchQuery, USERS_API_BASE]); // <-- CHANGEMENT
+
     // --- AGGREGATE FRIENDS' FAVORITES ---
     const [friendsFavMovies, setFriendsFavMovies] = useState([]);
     const [friendsFavPeople, setFriendsFavPeople] = useState([]);
@@ -271,27 +277,25 @@ export default function Friends() {
                 const peopleSet = new Set();
 
                 for (const friend of friendsProfiles) {
-                    // récup profil complet (pour avoir les favoris)
                     const fid = friend._id || friend.imdb_user_id;
                     if (!fid) continue;
                     try {
-                        const res = await fetch(`/myprofile?user_id=${encodeURIComponent(fid)}`, {
-                            signal: controller.signal,
-                        });
+                        const res = await fetch(
+                            `${USERS_API_BASE}/myprofile?user_id=${encodeURIComponent(fid)}`, // <-- CHANGEMENT
+                            { signal: controller.signal }
+                        );
                         if (!res.ok) continue;
                         const full = await res.json();
 
-                        // movies
                         const favMovies = full.favorites_movies || [];
                         for (const m of favMovies) {
-                            const id = typeof m === "string" ? m : m?._id;
+                            const id = typeof m === 'string' ? m : m?._id;
                             if (id) movieSet.add(id);
                         }
 
-                        // people
                         const favPeople = full.favorites_people || [];
                         for (const p of favPeople) {
-                            const id = typeof p === "string" ? p : p?._id;
+                            const id = typeof p === 'string' ? p : p?._id;
                             if (id) peopleSet.add(id);
                         }
                     } catch {
@@ -299,7 +303,6 @@ export default function Friends() {
                     }
                 }
 
-                // fetch movie & people details
                 async function fetchMovies(ids) {
                     const results = await Promise.all(
                         ids.map(async (id) => {
@@ -338,15 +341,14 @@ export default function Friends() {
                 setFriendsFavMovies(moviesData);
                 setFriendsFavPeople(peopleData);
             } catch (err) {
-                console.error("Failed to aggregate friends favorites", err);
+                console.error('Failed to aggregate friends favorites', err);
                 setFriendsFavMovies([]);
                 setFriendsFavPeople([]);
             }
         })();
 
         return () => controller.abort();
-    }, [friendsProfiles]);
-
+    }, [friendsProfiles, USERS_API_BASE]); // <-- CHANGEMENT
 
     // --- REQUEST MAPS (pending requests) ---
     const [requestSentMap, setRequestSentMap] = useState({});
@@ -371,7 +373,7 @@ export default function Friends() {
 
                 try {
                     const res = await fetch(
-                        `/friend-requests/${targetId}`
+                        `${USERS_API_BASE}/friend-requests/${targetId}` // <-- CHANGEMENT
                     );
                     if (!res.ok) continue;
 
@@ -397,7 +399,7 @@ export default function Friends() {
         return () => {
             abort = true;
         };
-    }, [authUser?._id, searchResults]);
+    }, [authUser?._id, searchResults, USERS_API_BASE]); // <-- CHANGEMENT
 
     async function handleSendFriendRequest(targetId) {
         if (!authUser?._id || !targetId) return;
@@ -405,7 +407,7 @@ export default function Friends() {
         try {
             setRequestSentMap((prev) => ({ ...prev, [targetId]: true }));
 
-            const res = await fetch(`/friend-request`, {
+            const res = await fetch(`${USERS_API_BASE}/friend-request`, { // <-- CHANGEMENT
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -427,15 +429,16 @@ export default function Friends() {
                 return;
             }
 
-            // mark pending
             setServerPendingMap((prev) => ({ ...prev, [targetId]: true }));
         } catch (err) {
             console.error('Error sending friend request:', err);
+
             setRequestSentMap((prev) => {
                 const copy = { ...prev };
                 delete copy[targetId];
                 return copy;
             });
+
             alert('Error sending friend request.');
         }
     }
@@ -445,7 +448,7 @@ export default function Friends() {
 
         try {
             const res = await fetch(
-                `/friend-request/${authUser._id}/${targetId}/cancel`,
+                `${USERS_API_BASE}/friend-request/${authUser._id}/${targetId}/cancel`, // <-- CHANGEMENT
                 { method: 'POST' }
             );
 
@@ -491,11 +494,11 @@ export default function Friends() {
 
             Object.entries(statuses).forEach(([movieId, status]) => {
                 if (!movieId) return;
-                if (status === "watched") {
+                if (status === 'watched') {
                     watchedSet.add(movieId);
-                } else if (status === "watching") {
+                } else if (status === 'watching') {
                     watchingSet.add(movieId);
-                } else if (status === "plan") {
+                } else if (status === 'plan') {
                     planSet.add(movieId);
                 }
             });
@@ -525,22 +528,23 @@ export default function Friends() {
 
                 for (const movieId of movieIds) {
                     try {
-                        const res = await fetch(`/api/movies-series/${encodeURIComponent(movieId)}`, {
-                            signal: controller.signal,
-                        });
+                        const res = await fetch(
+                            `/api/movies-series/${encodeURIComponent(movieId)}`,
+                            { signal: controller.signal }
+                        );
                         if (!res.ok) continue;
 
                         const data = await res.json();
                         results.push({
                             id: movieId,
-                            title: data.title || "Untitled",
+                            title: data.title || 'Untitled',
                             poster: data.poster || data.poster_url || null,
-                            year: data.year || data.release_year || "",
-                            type: data.imdb_type || data.type || "",
+                            year: data.year || data.release_year || '',
+                            type: data.imdb_type || data.type || '',
                         });
                     } catch (err) {
-                        if (err.name !== "AbortError") {
-                            console.warn("failed to fetch movie", movieId, err);
+                        if (err.name !== 'AbortError') {
+                            console.warn('failed to fetch movie', movieId, err);
                         }
                     }
                 }
@@ -564,7 +568,6 @@ export default function Friends() {
     const planList = useMoviesDetails(planIds);
 
     useEffect(() => {
-        // si t'as pas d'amis => clear
         if (!Array.isArray(friendsProfiles) || friendsProfiles.length === 0) {
             setFriendsWatched([]);
             setFriendsWatching([]);
@@ -579,49 +582,43 @@ export default function Friends() {
                 setLoadingFriendStatus(true);
                 setFriendStatusError(null);
 
-                // 1. pour chaque ami -> on va chercher son profil complet
                 const friendProfilesFull = await Promise.all(
                     friendsProfiles.map(async (friend) => {
                         const fid = friend._id || friend.imdb_user_id;
                         if (!fid) return null;
                         try {
                             const r = await fetch(
-                                `/myprofile?user_id=${encodeURIComponent(fid)}`
+                                `${USERS_API_BASE}/myprofile?user_id=${encodeURIComponent(fid)}` // <-- CHANGEMENT
                             );
                             if (!r.ok) return null;
                             return await r.json();
                         } catch (err) {
-                            console.warn("failed to fetch full friend profile", fid, err);
+                            console.warn('failed to fetch full friend profile', fid, err);
                             return null;
                         }
                     })
                 );
 
-                // 2. agrégation des IDs par statut
-                //    watched   -> "watched"
-                //    watching  -> "watching"
-                //    planning  -> "plan"
                 const watchedIds = new Set();
                 const watchingIds = new Set();
                 const planningIds = new Set();
 
                 for (const fp of friendProfilesFull) {
                     if (!fp || !fp.watch_statuses) continue;
-                    const ws = fp.watch_statuses; // { movieId: "watched" | "watching" | "plan" ... }
+                    const ws = fp.watch_statuses;
 
                     for (const movieId of Object.keys(ws)) {
                         const status = ws[movieId];
-                        if (status === "watched") {
+                        if (status === 'watched') {
                             watchedIds.add(movieId);
-                        } else if (status === "watching") {
+                        } else if (status === 'watching') {
                             watchingIds.add(movieId);
-                        } else if (status === "plan") {
+                        } else if (status === 'plan') {
                             planningIds.add(movieId);
                         }
                     }
                 }
 
-                // 3. fetch des fiches film/série pour chaque set
                 async function fetchMoviesForSet(idSet) {
                     const idsArr = Array.from(idSet);
                     if (idsArr.length === 0) return [];
@@ -629,27 +626,28 @@ export default function Friends() {
                     const results = await Promise.all(
                         idsArr.map(async (mid) => {
                             try {
-                                const r = await fetch(`/api/movies-series/${encodeURIComponent(mid)}`);
+                                const r = await fetch(
+                                    `/api/movies-series/${encodeURIComponent(mid)}`
+                                );
                                 if (!r.ok) return null;
                                 const data = await r.json();
-                                // On garde l'id d'origine au cas où
                                 return { ...data, _id: data._id || mid };
                             } catch (err) {
-                                console.warn("fail movie fetch", mid, err);
+                                console.warn('fail movie fetch', mid, err);
                                 return null;
                             }
                         })
                     );
 
-                    // filtre les nulls
                     return results.filter(Boolean);
                 }
 
-                const [watchedMovies, watchingMovies, planningMovies] = await Promise.all([
-                    fetchMoviesForSet(watchedIds),
-                    fetchMoviesForSet(watchingIds),
-                    fetchMoviesForSet(planningIds),
-                ]);
+                const [watchedMovies, watchingMovies, planningMovies] =
+                    await Promise.all([
+                        fetchMoviesForSet(watchedIds),
+                        fetchMoviesForSet(watchingIds),
+                        fetchMoviesForSet(planningIds),
+                    ]);
 
                 if (!aborted) {
                     setFriendsWatched(watchedMovies);
@@ -657,9 +655,11 @@ export default function Friends() {
                     setFriendsPlanning(planningMovies);
                 }
             } catch (err) {
-                console.error("friend status aggregation failed", err);
+                console.error('friend status aggregation failed', err);
                 if (!aborted) {
-                    setFriendStatusError("Couldn't load what your friends are watching.");
+                    setFriendStatusError(
+                        "Couldn't load what your friends are watching."
+                    );
                     setFriendsWatched([]);
                     setFriendsWatching([]);
                     setFriendsPlanning([]);
@@ -674,12 +674,9 @@ export default function Friends() {
         return () => {
             aborted = true;
         };
-    }, [friendsProfiles]);
-
-
+    }, [friendsProfiles, USERS_API_BASE]); // <-- CHANGEMENT
 
     function renderFriendCardGrid(friendObj) {
-        // friendObj est { id, name, location, initials } venant de sortedFriends
         const { id, name, location, initials } = friendObj;
 
         return (
@@ -740,7 +737,9 @@ export default function Friends() {
                     {loadingFriends ? (
                         <p className="friends-empty">Loading friends…</p>
                     ) : sortedFriends.length === 0 ? (
-                        <p className="friends-empty">You don't have any friends yet.</p>
+                        <p className="friends-empty">
+                            You don't have any friends yet.
+                        </p>
                     ) : (
                         <div className="friends-grid">
                             {sortedFriends.map(renderFriendCardGrid)}
@@ -753,8 +752,8 @@ export default function Friends() {
                     <div className="section-header">
                         <h2 className="section-title">Find people</h2>
                         <p className="section-sub">
-                            Search by full name or username, then click a profile
-                            to view them or send a friend request.
+                            Search by full name or username, then click a
+                            profile to view them or send a friend request.
                         </p>
                     </div>
 
@@ -767,7 +766,9 @@ export default function Friends() {
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
                         {searchBusy && (
-                            <div className="friend-search-status">Searching…</div>
+                            <div className="friend-search-status">
+                                Searching…
+                            </div>
                         )}
                     </div>
 
@@ -778,11 +779,19 @@ export default function Friends() {
                     {searchResults.length > 0 && (
                         <div className="search-grid">
                             {searchResults.map((user) => {
-                                const id = user._id || user.imdb_user_id;
-                                const name = user.full_name || user.username || 'Unknown User';
-                                const city = user.location_city || '';
-                                const country = user.location_country || '';
-                                const location = [city, country].filter(Boolean).join(', ') || '—';
+                                const id =
+                                    user._id || user.imdb_user_id;
+                                const name =
+                                    user.full_name ||
+                                    user.username ||
+                                    'Unknown User';
+                                const city =
+                                    user.location_city || '';
+                                const country =
+                                    user.location_country || '';
+                                const location = [city, country]
+                                    .filter(Boolean)
+                                    .join(', ') || '—';
                                 const initials = name
                                     .split(' ')
                                     .map((n) => n[0])
@@ -793,45 +802,62 @@ export default function Friends() {
                                 const itsMe =
                                     authUser &&
                                     (authUser._id === id ||
-                                        authUser.username === user.username);
+                                        authUser.username ===
+                                        user.username);
 
-                                // check if already friend
-                                const alreadyFriend = profile?.friends?.some((fr) => {
-                                    const fid =
-                                        typeof fr === 'string' ? fr : fr?._id || fr?.id;
-                                    return fid === id;
-                                });
+                                const alreadyFriend =
+                                    profile?.friends?.some((fr) => {
+                                        const fid =
+                                            typeof fr === 'string'
+                                                ? fr
+                                                : fr?._id || fr?.id;
+                                        return fid === id;
+                                    });
 
                                 const alreadyRequested =
                                     requestSentMap[id] === true ||
                                     serverPendingMap[id] === true;
 
                                 return (
-                                    <div key={id || name} className="search-card">
+                                    <div
+                                        key={id || name}
+                                        className="search-card"
+                                    >
                                         <div
                                             className="search-card-clickable"
                                             role="button"
                                             tabIndex={0}
                                             onClick={() => {
-                                                if (id) navigate(`/profile?user_id=${id}`);
+                                                if (id)
+                                                    navigate(
+                                                        `/profile?user_id=${id}`
+                                                    );
                                             }}
                                             onKeyDown={(e) => {
                                                 if (
-                                                    (e.key === 'Enter' || e.key === ' ') &&
+                                                    (e.key ===
+                                                        'Enter' ||
+                                                        e.key ===
+                                                        ' ') &&
                                                     id
                                                 ) {
-                                                    navigate(`/profile?user_id=${id}`);
+                                                    navigate(
+                                                        `/profile?user_id=${id}`
+                                                    );
                                                 }
                                             }}
                                         >
                                             <div className="friend-avatar">
                                                 <span>{initials}</span>
                                             </div>
-                                            <h3 className="friend-name">{name}</h3>
-                                            <p className="friend-meta">{location}</p>
+                                            <h3 className="friend-name">
+                                                {name}
+                                            </h3>
+                                            <p className="friend-meta">
+                                                {location}
+                                            </p>
                                         </div>
 
-                                        {/* Action button zone */}
                                         {itsMe ? (
                                             <div className="friend-action-btn friend-action-btn-disabled">
                                                 you
@@ -847,11 +873,12 @@ export default function Friends() {
                                                     background:
                                                         'rgba(255,255,255,0.08)',
                                                     color: '#ccc',
-                                                    border:
-                                                        '1px solid rgba(255,255,255,0.2)',
+                                                    border: '1px solid rgba(255,255,255,0.2)',
                                                 }}
                                                 onClick={async () => {
-                                                    await handleCancelFriendRequest(id);
+                                                    await handleCancelFriendRequest(
+                                                        id
+                                                    );
                                                 }}
                                             >
                                                 Cancel request
@@ -860,7 +887,9 @@ export default function Friends() {
                                             <button
                                                 className="friend-action-btn"
                                                 onClick={async () => {
-                                                    await handleSendFriendRequest(id);
+                                                    await handleSendFriendRequest(
+                                                        id
+                                                    );
                                                 }}
                                             >
                                                 + Add friend
@@ -872,18 +901,19 @@ export default function Friends() {
                         </div>
                     )}
 
-                    {/* "no user found" message */}
                     {hasFetchedOnce &&
                         searchQuery.trim() !== '' &&
                         searchResults.length === 0 &&
                         !searchBusy &&
                         !searchError && (
                             <p className="friends-empty">
-                                No users found for “{searchQuery.trim()}”.
+                                No users found for “
+                                {searchQuery.trim()}”.
                             </p>
                         )}
                 </section>
             </div>
+
             {/* FRIEND ACTIVITY RAILS */}
             <section className="friends-section">
                 <RecommendationRail
@@ -894,6 +924,7 @@ export default function Friends() {
                     error={null}
                     emptyMessage="Your friends haven’t added any favorites yet."
                 />
+
                 <RecommendationRail
                     title="Your friends watched"
                     subtitle="Recently watched by your friends"
@@ -923,18 +954,14 @@ export default function Friends() {
             </section>
 
             <section className="friends-favorites">
-
                 <FavoritePeopleRail
                     titleOverride="Friends’ Favorite People (Crew & Cast)"
                     subtitleOverride="Actors, directors, and creators your friends love"
-                    peopleRefs={
-                        friendsFavPeople.map(p => ({ _id: p._id || p.id || p.person_id }))
-                    }
+                    peopleRefs={friendsFavPeople.map((p) => ({
+                        _id: p._id || p.id || p.person_id,
+                    }))}
                 />
             </section>
-
-
         </div>
-
     );
 }
