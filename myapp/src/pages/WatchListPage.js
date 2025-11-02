@@ -1,5 +1,6 @@
+import WatchList from '../components/WatchList';
 const WatchListPage = () => {
-  return <div className="status">Watch List</div>;
+  return <WatchList />;
 };
 
 export default WatchListPage;
