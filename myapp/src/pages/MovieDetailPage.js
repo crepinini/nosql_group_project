@@ -181,14 +181,32 @@ const MovieDetailPage = () => {
         }
 
         const payload = await response.json();
-        const selection = curatedSelection(payload);
+        const fullList = Array.isArray(payload) ? payload : [];
+        const selection = curatedSelection(fullList);
+        const findByIdentifier = (collection, identifier) => {
+          if (!identifier || !collection || !collection.length) {
+            return null;
+          }
+          const normalizedId = String(identifier).trim();
+          if (!normalizedId) {
+            return null;
+          }
+          return collection.find((entry) =>
+            gatherIdentifiers(entry).some((value) => value === normalizedId),
+          );
+        };
 
         setMovies(selection);
         if (movieId) {
-          const match = selection.find((entry) => entry._id === movieId);
-          setSelectedMovie(match ?? selection[0] ?? null);
+          const selected =
+            findByIdentifier(fullList, movieId) ||
+            findByIdentifier(selection, movieId) ||
+            selection[0] ||
+            fullList[0] ||
+            null;
+          setSelectedMovie(selected);
         } else {
-          setSelectedMovie(selection[0] ?? null);
+          setSelectedMovie(selection[0] || fullList[0] || null);
         }
       } catch (err) {
         if (err.name !== 'AbortError') {
