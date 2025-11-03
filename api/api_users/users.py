@@ -33,6 +33,7 @@ CACHE_TTL_SECONDS = int(os.environ.get("CACHE_TTL_SECONDS", 60))
 
 
 def generate_next_user_id():
+    """Generate the next user identifier in the format 'u000000000001', 'u000000000002', etc."""
     latest_user = users_collection.find_one(
         {"_id": {"$regex": r"^u\d{12}$"}},
         sort=[("_id", DESCENDING)],
@@ -51,6 +52,7 @@ def generate_next_user_id():
 
 
 def serialize_document(document):
+    """Serialize a MongoDB document to a JSON-friendly dictionary."""
     if not document:
         return {}
     payload = dict(document)
@@ -61,12 +63,14 @@ def serialize_document(document):
 
 
 def build_cache_key(prefix, *parts):
+    """Build a Redis cache key with a given prefix and parts."""
     normalized = [prefix]
     for part in parts:
         normalized.append(str(part) if part is not None else "")
     return ":".join(normalized)
 
 def parse_boolean(value, default=False):
+    """Parse a value into a boolean."""
     if isinstance(value, bool):
         return value
     if isinstance(value, int):
@@ -79,9 +83,11 @@ def parse_boolean(value, default=False):
     return default if value is None else bool(value)
 
 def utc_timestamp_iso():
+    """Get the current UTC timestamp."""
     return datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
 
 def ensure_user_lists(user_doc):
+    """Ensure the user's lists are normalized and return them."""
     raw_lists = user_doc.get("list") if isinstance(user_doc, dict) else None
     mutated = False
     normalized_lists = []
@@ -199,6 +205,7 @@ def ensure_user_lists(user_doc):
     return normalized_lists
 
 def save_user_lists(user_doc, lists):
+    """Save the user's lists to the database and invalidate cache."""
     users_collection.update_one(
         {"_id": user_doc["_id"]},
         {"$set": {"list": lists}},
@@ -207,6 +214,7 @@ def save_user_lists(user_doc, lists):
     invalidate_user_cache(str(user_doc.get("_id")))
 
 def extract_friend_ids(user_doc):
+    """Extract and normalize friend IDs from the user document."""
     friends_raw = user_doc.get("friends") if isinstance(user_doc, dict) else None
     if not friends_raw:
         return []
@@ -236,6 +244,7 @@ def extract_friend_ids(user_doc):
     return normalized
 
 def find_user_list(user_doc, list_id, lists_cache=None):
+    """Find a specific user list by its identifier."""
     if not list_id:
         return None
     lists = lists_cache if lists_cache is not None else ensure_user_lists(user_doc)
@@ -246,6 +255,7 @@ def find_user_list(user_doc, list_id, lists_cache=None):
 
 
 def invalidate_user_cache(user_id):
+    """Invalidate cache entries related to a specific user."""
     keys = [
         build_cache_key("user_detail", user_id),
         build_cache_key("profile", user_id),
@@ -260,6 +270,7 @@ def invalidate_user_cache(user_id):
 
 
 def invalidate_user_list_cache():
+    """Invalidate all user list cache entries."""
     try:
         for key in r.scan_iter("users:*"):
             r.delete(key)
@@ -268,6 +279,7 @@ def invalidate_user_list_cache():
 
 
 def find_user(identifier, projection=None):
+    """Find a user by various identifiers."""
     if not identifier:
         return None
 
@@ -287,9 +299,22 @@ def find_user(identifier, projection=None):
     query = {"$or": criteria}
     return users_collection.find_one(query, projection)
 
+def add_friend(user_doc, other_id):
+    """Add a friend to the user's friends list."""
+    current_friends = list(user_doc.get("friends") or [])
+    ids_only = [f.get("_id") if isinstance(f, dict) else f for f in current_friends]
+
+    if other_id not in ids_only:
+        current_friends.append({"_id": other_id})
+        users_collection.update_one(
+            {"_id": user_doc["_id"]},
+            {"$set": {"friends": current_friends}}
+        )
+
 
 @app.route("/users", methods=["GET"])
 def list_users():
+    """List users with optional search and limit parameters."""
     search = request.args.get("q")
     limit_param = request.args.get("limit")
 
@@ -322,6 +347,7 @@ def list_users():
 
 @app.route("/users/<user_id>", methods=["GET"])
 def get_user_detail(user_id):
+    """Get detailed information about a specific user."""
     cache_key = build_cache_key("user_detail", user_id)
     cached = r.get(cache_key)
     if cached:
@@ -339,6 +365,7 @@ def get_user_detail(user_id):
 
 @app.route("/auth/login", methods=["POST"])
 def authenticate_user():
+    """Authenticate a user with username and password."""
     payload = request.get_json(silent=True) or {}
     username = (payload.get("username") or "").strip()
     password = payload.get("password") or ""
@@ -355,6 +382,7 @@ def authenticate_user():
 
 @app.route("/auth/login/<user_id>", methods=["PUT"])
 def update_authenticate_user(user_id):
+    """Update a user's username and/or password."""
     payload = request.get_json(silent=True) or {}
     new_username = payload.get("username")
     new_password = payload.get("password")
@@ -373,6 +401,7 @@ def update_authenticate_user(user_id):
 
 @app.route("/auth/register", methods=["POST"])
 def create_user():
+    """Create a new user account."""
     payload = request.get_json(silent=True) or {}
     username = (payload.get("username") or "").strip()
     password = payload.get("password") or ""
@@ -462,6 +491,7 @@ def create_user():
 
 @app.route("/auth/delete/<user_id>", methods=["DELETE"])
 def delete_user(user_id):
+    """Delete a user account."""
     if not ObjectId.is_valid(user_id):
         return jsonify({"error": "The ID of the user is invalid"}), 400
     user = users_collection.find_one({"_id": ObjectId(user_id)})
@@ -473,6 +503,7 @@ def delete_user(user_id):
 
 @app.route("/myfriends", methods=["GET"])
 def get_my_friends():
+    """Get the list of friends."""
     cache_key = "my_friends_list"
     cached = r.get(cache_key)
     if cached:
@@ -486,6 +517,7 @@ def get_my_friends():
 
 @app.route("/my_friends/<friend_id>", methods=["GET"])
 def get_my_friend(friend_id):
+    """Get a specific friend by ID."""
     cache_key = build_cache_key("friend", friend_id)
     cached = r.get(cache_key)
     if cached:
@@ -511,6 +543,7 @@ def get_my_friend(friend_id):
 
 @app.route("/myprofile", methods=["GET"])
 def get_profile():
+    """Get the profile of a user."""
     user_id = request.args.get("user_id")
     if not user_id:
         return jsonify({"error": "user_id query parameter is required"}), 400
@@ -532,6 +565,7 @@ def get_profile():
 
 @app.route("/mylist", methods=["GET"])
 def get_my_list():
+    """Get the favorite movies list of a user."""
     user_id = request.args.get("user_id")
     if not user_id:
         return jsonify({"error": "user_id query parameter is required"}), 400
@@ -561,6 +595,7 @@ def get_my_list():
 
 @app.route("/users/<user_id>/lists", methods=["GET"])
 def get_user_lists(user_id):
+    """Get all lists of a specific user."""
     user = find_user(user_id)
     if not user:
         return jsonify({"error": "User not found"}), 404
@@ -569,6 +604,7 @@ def get_user_lists(user_id):
 
 @app.route("/users/<user_id>/lists", methods=["POST"])
 def create_user_list(user_id):
+    """Create a new list for a specific user."""
     user = find_user(user_id)
     if not user:
         return jsonify({"error": "User not found"}), 404
@@ -602,6 +638,7 @@ def create_user_list(user_id):
 
 @app.route("/users/<user_id>/friends/lists", methods=["GET"])
 def get_friend_public_lists(user_id):
+    """Get public lists from a user's friends."""
     user = find_user(user_id)
     if not user:
         return jsonify({"error": "User not found"}), 404
@@ -646,6 +683,7 @@ def get_friend_public_lists(user_id):
 
 @app.route("/users/<user_id>/lists/<list_id>", methods=["PATCH"])
 def update_user_list(user_id, list_id):
+    """Update a specific list of a user."""
     user = find_user(user_id)
     if not user:
         return jsonify({"error": "User not found"}), 404
@@ -684,6 +722,7 @@ def update_user_list(user_id, list_id):
 
 @app.route("/users/<user_id>/lists/<list_id>", methods=["DELETE"])
 def delete_user_list(user_id, list_id):
+    """Delete a specific list of a user."""
     user = find_user(user_id)
     if not user:
         return jsonify({"error": "User not found"}), 404
@@ -698,6 +737,7 @@ def delete_user_list(user_id, list_id):
 
 @app.route("/users/<user_id>/lists/<list_id>/items", methods=["POST"])
 def add_list_item(user_id, list_id):
+    """Add an item to a specific user list."""
     user = find_user(user_id)
     if not user:
         return jsonify({"error": "User not found"}), 404
@@ -752,6 +792,7 @@ def add_list_item(user_id, list_id):
 
 @app.route("/users/<user_id>/lists/<list_id>/items/<movie_id>", methods=["DELETE"])
 def remove_list_item(user_id, list_id, movie_id):
+    """Remove an item from a specific user list."""
     user = find_user(user_id)
     if not user:
         return jsonify({"error": "User not found"}), 404
@@ -783,6 +824,7 @@ def remove_list_item(user_id, list_id, movie_id):
 
 @app.route("/users/<user_id>/favorites", methods=["POST"])
 def update_user_favorites(user_id):
+    """Update a user's favorite movies."""
     payload = request.get_json(silent=True) or {}
     movie_id = (payload.get("movie_id") or "").strip()
     action = (payload.get("action") or "toggle").strip().lower()
@@ -817,6 +859,7 @@ def update_user_favorites(user_id):
 
 @app.route("/users/<user_id>/favorites-people", methods=["POST"])
 def update_user_favorite_people(user_id):
+    """Update a user's favorite people."""
     payload = request.get_json(silent=True) or {}
     person_id = (payload.get("person_id") or "").strip()
     action = (payload.get("action") or "toggle").strip().lower()
@@ -853,6 +896,7 @@ def update_user_favorite_people(user_id):
 
 @app.route("/users/<user_id>/watch-status", methods=["POST"])
 def update_watch_status(user_id):
+    """Update a user's watch status for a movie."""
     payload = request.get_json(silent=True) or {}
     movie_id = (payload.get("movie_id") or "").strip()
     raw_status = payload.get("status")
@@ -911,6 +955,7 @@ def update_watch_status(user_id):
 
 @app.route("/users/<user_id>/ratings", methods=["POST"])
 def update_movie_rating(user_id):
+    """Update a user's rating for a movie."""
     payload = request.get_json(silent=True) or {}
     movie_id = (payload.get("movie_id") or "").strip()
     rating_raw = payload.get("rating")
@@ -953,6 +998,7 @@ def update_movie_rating(user_id):
 
 @app.route("/users/<user_id>/comments", methods=["POST"])
 def update_movie_comment(user_id):
+    """Update a user's comment for a movie."""
     payload = request.get_json(silent=True) or {}
     movie_id = (payload.get("movie_id") or "").strip()
     comment_raw = payload.get("comment")
@@ -1035,6 +1081,7 @@ def update_movie_comment(user_id):
 
 @app.route("/friend-request", methods=["POST"])
 def send_friend_request():
+    """Send a friend request from one user to another."""
     data = request.get_json(silent=True) or {}
 
     from_user = (data.get("from_user") or "").strip()
@@ -1078,6 +1125,7 @@ def send_friend_request():
 
 @app.route("/friend-requests/<user_id>", methods=["GET"])
 def get_friend_requests(user_id):
+    """Get pending friend requests for a user."""
     user = find_user(user_id)
     if not user:
         return jsonify({"error": "user not found"}), 404
@@ -1101,6 +1149,7 @@ def get_friend_requests(user_id):
 
 @app.route("/friend-request/<request_id>/accept", methods=["POST"])
 def accept_friend_request(request_id):
+    """Accept a friend request."""
     try:
         fr = friend_requests.find_one({"_id": ObjectId(request_id)})
     except (InvalidId, TypeError):
@@ -1118,17 +1167,6 @@ def accept_friend_request(request_id):
     if not user_from or not user_to:
         return jsonify({"error": "user not found"}), 404
 
-    def add_friend(user_doc, other_id):
-        current_friends = list(user_doc.get("friends") or [])
-        ids_only = [f.get("_id") if isinstance(f, dict) else f for f in current_friends]
-
-        if other_id not in ids_only:
-            current_friends.append({"_id": other_id})
-            users_collection.update_one(
-                {"_id": user_doc["_id"]},
-                {"$set": {"friends": current_friends}}
-            )
-
     add_friend(user_from, str(user_to["_id"]))
     add_friend(user_to, str(user_from["_id"]))
 
@@ -1142,6 +1180,7 @@ def accept_friend_request(request_id):
 
 @app.route("/friend-request/<request_id>/refuse", methods=["POST"])
 def refuse_friend_request(request_id):
+    """Refuse a friend request."""
     try:
         fr = friend_requests.find_one({"_id": ObjectId(request_id)})
     except (InvalidId, TypeError):
@@ -1156,6 +1195,7 @@ def refuse_friend_request(request_id):
 
 @app.route("/friend-request/<from_user>/<to_user>/cancel", methods=["POST"])
 def cancel_friend_request(from_user, to_user):
+    """Cancel a sent friend request."""
     fr = friend_requests.find_one({
         "from_user": from_user,
         "to_user": to_user
@@ -1170,6 +1210,7 @@ def cancel_friend_request(from_user, to_user):
 
 @app.route("/myprofile/<user_id>", methods=["PUT"])
 def update_profile(user_id):
+    """Update a user's profile information."""
     payload = request.get_json() or {}
 
     user = users_collection.find_one({"_id": user_id})
@@ -1205,6 +1246,7 @@ def update_profile(user_id):
 
 @app.route("/users/<user_a>/friends/<user_b>", methods=["DELETE"])
 def delete_friend(user_a, user_b):
+    """"Delete a friend relationship between two users."""
     user_A = find_user(user_a)
     user_B = find_user(user_b)
 
