@@ -6,6 +6,11 @@ import './Home.css';
 const FALLBACK_POSTER =
   'https://via.placeholder.com/400x600.png?text=Poster+Unavailable';
 
+const getSubtitle = (type) => {
+  if (type === 'Movie') return 'Find all your favorite movies';
+  if (type === 'TVSeries') return 'Find all your favorite series';
+  return 'Find all your favorite movies & series';
+};
 const formatRuntime = (duration) => {
   if (!duration || Number.isNaN(Number(duration))) {
     return null;
@@ -121,7 +126,7 @@ export default function Home({ filterType }) {
     <div className="home-page">
       <header className="home-hero">
         <h1>Welcome</h1>
-        <p>Find all your favorite movies & series</p>
+        <p>{getSubtitle(filterType)}</p>
       </header>
 
       <main className="home-content">
