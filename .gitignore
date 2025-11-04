@@ -11,6 +11,7 @@ api/api_users/node_modules/
 api/api_people/node_modules/
 api/api_users/data/
 api/api_people/data/
+webscrapping/imdb_db/title.basics.tsv
 
 # C extensions
 *.so

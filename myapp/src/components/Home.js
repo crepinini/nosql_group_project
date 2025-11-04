@@ -31,7 +31,7 @@ export default function Home({ filterType }) {
   const [yearRange, setYearRange] = useState({ min: '', max: '' });
   const [yearSort, setYearSort] = useState('');
   const [ratingSort, setRatingSort] = useState('');
-  const itemsPerPage = 10;
+  const itemsPerPage = 30;
   const navigate = useNavigate();
 
   useEffect(() => {
