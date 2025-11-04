@@ -1,34 +1,25 @@
 import { useEffect, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { getStoredUser, subscribeToAuthChanges } from './Login/auth';
-import { buildMoviesUrl } from '../config';
+import { getStoredUser, subscribeToAuthChanges, storeUser } from './Login/auth';
+import { buildMoviesUrl, buildUsersUrl } from '../config';
 import './WatchList.css';
 import WatchListRail from './WatchListRail';
-
-const FALLBACK_POSTER = 'https://via.placeholder.com/400x600.png?text=Poster+Unavailable';
-
-const formatRuntime = (duration) => {
-  if (!duration || Number.isNaN(Number(duration))) return null;
-  const totalMinutes = Number(duration);
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-  return hours === 0 ? `${minutes}m` : `${hours}h ${minutes.toString().padStart(2,'0')}m`;
-};
 
 const WatchList = () => {
   const [authUser, setAuthUser] = useState(() => getStoredUser());
   const [movies, setMovies] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedTerm, setDebouncedTerm] = useState('');
-  const [watching, setWatching] = useState(() => JSON.parse(localStorage.getItem('watching') || '[]'));
-  const [toWatch, setToWatch] = useState(() => JSON.parse(localStorage.getItem('toWatch') || '[]'));
-  const [watched, setWatched] = useState(() => JSON.parse(localStorage.getItem('watched') || '[]'));
+  const [watching, setWatching] = useState([]);
+  const [toWatch, setToWatch] = useState([]);
+  const [watched, setWatched] = useState([]);
   const [showFilter, setShowFilter] = useState(false);
   const [selectedGenre, setSelectedGenre] = useState([]);
   const [yearRange, setYearRange] = useState({ min: '', max: '' });
   const [yearSort, setYearSort] = useState('');
   const [ratingSort, setRatingSort] = useState('');
   const navigate = useNavigate();
+  const userId = authUser?._id || authUser?.username;
 
   useEffect(() => {
     const unsubscribe = subscribeToAuthChanges(() => setAuthUser(getStoredUser()));
@@ -54,10 +45,37 @@ const WatchList = () => {
     const handle = setTimeout(() => setDebouncedTerm(searchTerm.trim()), 350);
     return () => clearTimeout(handle);
   }, [searchTerm]);
+  //status synchronisation
+  useEffect(() => {
+    if (!authUser?.watch_statuses || !movies.length) return;
 
-  useEffect(() => { localStorage.setItem('watching', JSON.stringify(watching)); }, [watching]);
-  useEffect(() => { localStorage.setItem('toWatch', JSON.stringify(toWatch)); }, [toWatch]);
-  useEffect(() => { localStorage.setItem('watched', JSON.stringify(watched)); }, [watched]);
+    const statuses = authUser.watch_statuses;
+    const movieMap = Object.fromEntries(movies.map(m => [m._id, m]));
+
+    const newWatching = [], newToWatch = [], newWatched = [];
+
+    Object.entries(statuses).forEach(([id, status]) => {
+      const movie = movieMap[id];
+      if (!movie) return;
+
+      if (status === 'watching') newWatching.push(movie);
+      else if (status === 'plan') newToWatch.push(movie);
+      else if (status === 'watched') newWatched.push(movie);
+    });
+
+    setWatching(newWatching);
+    setToWatch(newToWatch);
+    setWatched(newWatched);
+  }, [authUser?.watch_statuses, movies]);
+
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const user = getStoredUser();
+      if (user) setAuthUser(user);
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [movies]);
 
   if (!authUser) return <Navigate to="/login" replace />;
 
@@ -93,17 +111,48 @@ const WatchList = () => {
     else setSelectedGenre([...selectedGenre, genre]);
   };
 
-  const addToSection = (movie, section) => {
-    removeFromAllSections(movie);
-    if (section === 'watching') setWatching(prev => [...prev, movie]);
-    else if (section === 'toWatch') setToWatch(prev => [...prev, movie]);
-    else if (section === 'watched') setWatched(prev => [...prev, movie]);
+  const updateWatchStatus = async (movieId, status) => {
+    if (!userId) return;
+
+    try {
+      const response = await fetch(buildUsersUrl(`/users/${userId}/watch-status`), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          movie_id: movieId,
+          status: status === 'none' ? null : status,
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to update status');
+
+      const updatedStatuses = await response.json();
+
+      const nextUser = { ...authUser, watch_statuses: updatedStatuses };
+      setAuthUser(nextUser);
+      storeUser(nextUser);
+
+      window.dispatchEvent(new Event('storage'));
+    } catch (err) {
+      console.error('Failed to sync watch status', err);
+    }
   };
 
-  const removeFromAllSections = (movie) => {
+  const addToSection = async (movie, section) => {
+    removeFromAllSections(movie);
+    if (section === 'watching') setWatching(prev => [...prev, movie]);
+    else if (section === 'plan') setToWatch(prev => [...prev, movie]);
+    else if (section === 'watched') setWatched(prev => [...prev, movie]);
+
+    await updateWatchStatus(movie._id, section);
+  };
+
+  const removeFromAllSections = async (movie) => {
     setWatching(prev => prev.filter(m => m._id !== movie._id));
     setToWatch(prev => prev.filter(m => m._id !== movie._id));
     setWatched(prev => prev.filter(m => m._id !== movie._id));
+
+    await updateWatchStatus(movie._id, 'none');
   };
 
   const applyFilterToSection = (items) => {
@@ -181,7 +230,7 @@ const WatchList = () => {
                 <select onChange={e => addToSection(m, e.target.value)} defaultValue="">
                   <option value="" disabled>Add to...</option>
                   <option value="watching">Watching</option>
-                  <option value="toWatch">To Watch</option>
+                  <option value="plan">To Watch</option>
                   <option value="watched">Watched</option>
                 </select>
               </div>

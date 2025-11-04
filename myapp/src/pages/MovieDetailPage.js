@@ -404,7 +404,7 @@ const MovieDetailPage = () => {
       setFavoritePending(false);
     }
   };
-
+  
   const discoverMovies = relatedTitles.length ? relatedTitles : movies;
   const discoverLoading = relatedLoading && relatedTitles.length === 0;
   const discoverError = relatedTitles.length ? null : relatedError;
@@ -452,6 +452,7 @@ const MovieDetailPage = () => {
       };
       setAuthUser(nextUser);
       storeUser(nextUser);
+      window.dispatchEvent(new Event('storage'));
     } catch (err) {
       console.error('Failed to update watch status', err);
       setStatusError('Unable to update watch status right now.');

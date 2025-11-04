@@ -35,8 +35,10 @@ const WatchListRail = ({ title, items = [], addToSection, removeFromAllSections 
             {movie.duration && <p className="movie-duration">{formatRuntime(movie.duration)}</p>}
             {movie.rating && <p className="movie-rating">⭐ {Number(movie.rating).toFixed(1)}</p>}
             <div className="watch-card-move">
-              {['watching','toWatch','watched'].map(sec => (
-                <button key={sec} onClick={() => addToSection(movie, sec)}>{sec}</button>
+              {['watching','plan','watched'].map(sec => (
+                <button key={sec} onClick={() => addToSection(movie, sec)}>
+                  {sec === 'plan' ? 'To Watch' : sec}
+                </button>
               ))}
               <button onClick={() => removeFromAllSections(movie)}>Remove</button>
             </div>
