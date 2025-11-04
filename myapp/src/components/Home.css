@@ -17,6 +17,8 @@
   border-radius: 12px;
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
   width: 1180px;
+  max-width: 100%;
+  margin: 0 auto;
 }
 
 .home-hero h1 {
@@ -131,10 +133,10 @@
 .home-page__controls {
   display: grid;
   gap: 0.85rem;
-  margin-bottom: 1.5rem;
+  margin: 0 auto 1.5rem auto;
   width: 100%;
   max-width: 1180px;
-  min-width: 1180px;
+  min-width: auto;
 }
 
 .home-page__search-label {
@@ -277,4 +279,95 @@
 .pagination span {
   color: #f1f1f1;
   font-size: 1rem;
+}
+
+.actor-filter-compact {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  width: 100%;
+}
+
+.actor-search-container {
+  position: relative;
+  width: 100%;
+}
+
+.actor-search-input {
+  width: 100%;
+  max-width: 200px;
+  padding: 0.3rem 0.45rem;
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(0,180,216,0.1);
+  color: #f2f2f2;
+  font-size: 0.8rem;
+  box-sizing: border-box;
+}
+
+.actor-loading {
+  font-size: 0.65rem;
+  color: #aaa;
+  padding-left: 0.45rem;
+  margin-top: 0.1rem;
+}
+
+.actor-results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  max-width: 200px;
+  background: rgba(9,11,19,0.95);
+  border-radius: 6px;
+  margin-top: 0.2rem;
+  max-height: 110px;
+  overflow-y: auto;
+  z-index: 200;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 0.8rem;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+}
+
+.actor-result-item {
+  padding: 0.35rem 0.45rem;
+  cursor: pointer;
+}
+
+.actor-result-item:hover {
+  background: rgba(0,180,216,0.3);
+}
+
+.selected-actors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.2rem;
+}
+
+.selected-actor-tag {
+  background: rgba(0,180,216,0.25);
+  padding: 0.1rem 0.4rem;
+  border-radius: 5px;
+  font-size: 0.7rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: #f2f2f2;
+}
+
+.remove-actor {
+  background: none;
+  border: none;
+  color: #ff6b6b;
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 0;
+  width: 1rem;
+  height: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }

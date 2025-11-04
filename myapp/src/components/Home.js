@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { buildMoviesUrl } from '../config';
+import { buildMoviesUrl, buildPeopleUrl } from '../config';
 import './Home.css';
 
 const FALLBACK_POSTER =
@@ -36,6 +36,11 @@ export default function Home({ filterType }) {
   const [yearRange, setYearRange] = useState({ min: '', max: '' });
   const [yearSort, setYearSort] = useState('');
   const [ratingSort, setRatingSort] = useState('');
+  const [actorSearch, setActorSearch] = useState('');
+  const [debouncedActorSearch, setDebouncedActorSearch] = useState('');
+  const [selectedActors, setSelectedActors] = useState([]);
+  const [actorResults, setActorResults] = useState([]);
+  const [actorLoading, setActorLoading] = useState(false);
   const itemsPerPage = 30;
   const navigate = useNavigate();
 
@@ -75,7 +80,33 @@ export default function Home({ filterType }) {
     return () => clearTimeout(handle);
   }, [searchTerm]);
 
-  const genres = ['All', ...new Set(movies.flatMap((m) => m.genres || []))];
+  useEffect(() => {
+    const handle = setTimeout(() => setDebouncedActorSearch(actorSearch.trim()), 300);
+    return () => clearTimeout(handle);
+  }, [actorSearch]);
+
+  useEffect(() => {
+    if (!debouncedActorSearch) {
+      setActorResults([]);
+      return;
+    }
+    const fetchActors = async () => {
+      setActorLoading(true);
+      try {
+        const params = new URLSearchParams({ q: debouncedActorSearch, limit: 5 });
+        const res = await fetch(buildPeopleUrl(`/people?${params}`));
+        if (res.ok) {
+          const data = await res.json();
+          const results = Array.isArray(data) ? data : data.results || [];
+          setActorResults(results.slice(0, 5));
+        }
+      } catch (e) { console.error(e); }
+      setActorLoading(false);
+    };
+    fetchActors();
+  }, [debouncedActorSearch]);
+
+  const genres = ['All', ...new Set(movies.flatMap(m => m.genres || []))];
 
   let filteredMovies = movies.filter((m) =>
     m.title.toLowerCase().includes(debouncedTerm.toLowerCase())
@@ -87,6 +118,13 @@ export default function Home({ filterType }) {
     );
   }
 
+  if (selectedActors.length > 0) {
+    filteredMovies = filteredMovies.filter(m => {
+      const actorNames = m.main_actors || m.first_four_actors || [];
+      return selectedActors.every(a => actorNames.includes(a.name));
+    });
+  }
+
   if (yearRange.min || yearRange.max) {
     filteredMovies = filteredMovies.filter((m) => {
       const year = m.year || 0;
@@ -96,7 +134,7 @@ export default function Home({ filterType }) {
     });
   }
 
-  if (yearSort === 'asc') {
+   if (yearSort === 'asc') {
     filteredMovies.sort((a, b) => (a.year || 0) - (b.year || 0));
   } else if (yearSort === 'desc') {
     filteredMovies.sort((a, b) => (b.year || 0) - (a.year || 0));
@@ -113,12 +151,22 @@ export default function Home({ filterType }) {
   const currentMovies = filteredMovies.slice(indexOfFirstMovie, indexOfLastMovie);
   const totalPages = Math.ceil(filteredMovies.length / itemsPerPage);
 
-  const toggleGenre = (genre) => {
-    if (selectedGenre.includes(genre)) {
-      setSelectedGenre(selectedGenre.filter((g) => g !== genre));
-    } else {
-      setSelectedGenre([...selectedGenre, genre]);
+  const toggleGenre = g => {
+    setSelectedGenre(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g]);
+    setCurrentPage(1);
+  };
+
+  const addActor = a => {
+    if (!selectedActors.find(x => x._id === a._id)) {
+      setSelectedActors(prev => [...prev, a]);
     }
+    setActorSearch('');
+    setActorResults([]);
+    setCurrentPage(1);
+  };
+
+  const removeActor = id => {
+    setSelectedActors(prev => prev.filter(x => x._id !== id));
     setCurrentPage(1);
   };
 
@@ -155,6 +203,40 @@ export default function Home({ filterType }) {
                   <button onClick={() => setSelectedGenre([])}>Reset</button>
                 </div>
               </div>
+
+              <div className="filter-section">
+                <h4>Sort by Actors</h4>
+                <div className="actor-filter-compact">
+                  <div className="actor-search-container">
+                    <input
+                      type="text"
+                      placeholder="Search..."
+                      value={actorSearch}
+                      onChange={e => setActorSearch(e.target.value)}
+                      className="actor-search-input"
+                    />
+                    {actorLoading && <div className="actor-loading">...</div>}
+                    {actorResults.length > 0 && (
+                      <ul className="actor-results">
+                        {actorResults.map(a => (
+                          <li key={a._id} onClick={() => addActor(a)} className="actor-result-item">
+                            {a.name}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                  <div className="selected-actors">
+                    {selectedActors.map(a => (
+                      <span key={a._id} className="selected-actor-tag">
+                        {a.name}
+                        <button onClick={() => removeActor(a._id)} className="remove-actor">×</button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
               <div className="filter-section">
                 <h4>Sort by Year</h4>
                 <div className="year-range">
