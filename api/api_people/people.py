@@ -21,11 +21,17 @@ r = redis.Redis(
     db=int(os.environ.get("REDIS_DB", 0)),
 )
 
-CACHE_TTL_SECONDS = int(os.environ.get("CACHE_TTL_SECONDS", 60))
+CACHE_TTL_SECONDS = int(os.environ.get("CACHE_TTL_SECONDS", 600))
 
 
 @app.route("/people", methods=["GET"])
 def get_people():
+    """
+    Handle GET requests for people listings.
+
+    Returns:
+        Response: Flask response with people data and metadata.
+    """
     search = request.args.get("q")
     role = (request.args.get("role") or "all").lower()
     sort_option = (request.args.get("sort") or "default").lower()
@@ -55,14 +61,7 @@ def get_people():
     page = max(page, 1)
     skip = (page - 1) * page_size
 
-    cache_key = build_cache_key(
-        "people",
-        search or "",
-        role or "",
-        sort_option or "",
-        str(page),
-        str(page_size),
-    )
+    cache_key = build_cache_key("people", search or "", role or "", sort_option or "", str(page), str(page_size))
     cached = r.get(cache_key)
     if cached:
         print("people cache hit!")
@@ -74,16 +73,23 @@ def get_people():
     cursor = people_collection.aggregate(pipeline, collation=collation)
     documents = list(cursor)
 
-    payload = build_people_payload(
-        documents, page, page_size, sort_option, role, search
-    )
+    payload = build_people_payload(documents, page, page_size, sort_option, role, search)
 
     r.setex(cache_key, CACHE_TTL_SECONDS, json.dumps(payload))
     return jsonify(payload)
 
 
 @app.route("/people/<id>", methods=["GET"])
-def get_person(id):
+def get_person(id: str):
+    """
+    Handle GET requests for a person by identifier.
+
+    Args:
+        id (str): Identifier from the path segment.
+
+    Returns:
+        Response: Flask response with person data or error payload.
+    """
     cache_key = build_cache_key("people_detail", id)
     cached = r.get(cache_key)
     if cached:

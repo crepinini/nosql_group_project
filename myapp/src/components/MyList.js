@@ -216,8 +216,12 @@ const MyList = () => {
   const [catalogLoading, setCatalogLoading] = useState(true);
   const [catalogError, setCatalogError] = useState(null);
   const [peopleCatalog, setPeopleCatalog] = useState([]);
+  const [peopleSuggestions, setPeopleSuggestions] = useState([]);
   const [peopleLoading, setPeopleLoading] = useState(true);
   const [peopleError, setPeopleError] = useState(null);
+  const [peopleSearchError, setPeopleSearchError] = useState(null);
+  const [peopleSearchPending, setPeopleSearchPending] = useState(false);
+  const [lastPeopleSearch, setLastPeopleSearch] = useState('');
 
   const [searchTerm, setSearchTerm] = useState('');
   const [pendingItems, setPendingItems] = useState(new Set());
@@ -618,8 +622,98 @@ const catalogById = useMemo(() => {
     selectedListType === 'people' ? 'Add cast & crew' : 'Add movies or series';
   const searchPlaceholder =
     selectedListType === 'people' ? 'Search by name or profession...' : 'Search the catalog...';
-  const searchSourceLoading = selectedListType === 'people' ? peopleLoading : catalogLoading;
-  const searchSourceError = selectedListType === 'people' ? peopleError : catalogError;
+  const searchSourceLoading =
+    selectedListType === 'people' ? peopleLoading || peopleSearchPending : catalogLoading;
+  const searchSourceError =
+    selectedListType === 'people'
+      ? (searchTerm.trim() ? peopleSearchError : peopleError)
+      : catalogError;
+  const searchInputDisabled =
+    selectedListType === 'people'
+      ? peopleLoading && peopleCatalog.length === 0
+      : catalogLoading && catalog.length === 0;
+
+  useEffect(() => {
+    if (selectedListType !== 'people') {
+      setPeopleSuggestions([]);
+      setPeopleSearchPending(false);
+      setLastPeopleSearch('');
+      setPeopleSearchError(null);
+      return;
+    }
+
+    const rawTerm = searchTerm.trim();
+    if (!rawTerm) {
+      setPeopleSuggestions([]);
+      setPeopleSearchPending(false);
+      setLastPeopleSearch('');
+      setPeopleSearchError(null);
+      return;
+    }
+
+    const controller = new AbortController();
+    let aborted = false;
+
+    setLastPeopleSearch(rawTerm);
+    setPeopleSuggestions([]);
+    setPeopleSearchPending(true);
+    setPeopleSearchError(null);
+
+    (async () => {
+      try {
+        const params = new URLSearchParams({
+          q: rawTerm,
+          page_size: '15',
+          sort: 'name',
+        });
+        const endpoint = buildPeopleUrl(`/people?${params.toString()}`);
+        const res = await fetch(endpoint, { signal: controller.signal });
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+        const payload = await res.json();
+        if (aborted) {
+          return;
+        }
+        const rawEntries = Array.isArray(payload?.results) ? payload.results : [];
+        const normalized = rawEntries.map(normalizePerson).filter((entry) => entry.id);
+        setPeopleSuggestions(normalized);
+        if (normalized.length) {
+          setPeopleCatalog((previous) => {
+            if (!previous.length) {
+              return normalized;
+            }
+            const merged = new Map();
+            previous.forEach((item) => {
+              if (item?.id) {
+                merged.set(item.id, item);
+              }
+            });
+            normalized.forEach((item) => {
+              if (item?.id) {
+                merged.set(item.id, item);
+              }
+            });
+            return Array.from(merged.values());
+          });
+        }
+      } catch (err) {
+        if (!aborted && err.name !== 'AbortError') {
+          console.error('Failed to search people catalog', err);
+          setPeopleSearchError('Unable to search the cast & crew directory right now.');
+        }
+      } finally {
+        if (!aborted) {
+          setPeopleSearchPending(false);
+        }
+      }
+    })();
+
+    return () => {
+      aborted = true;
+      controller.abort();
+    };
+  }, [searchTerm, selectedListType]);
 
   const canModifySelectedList = selectedOwner === 'self' && Boolean(selectedList);
   const selectedFriendName =
@@ -740,7 +834,9 @@ const catalogById = useMemo(() => {
     const listType = (selectedList?.type || 'movies').toLowerCase();
 
     if (listType === 'people') {
-      return peopleCatalog
+      const usingRemote = lastPeopleSearch && lastPeopleSearch === rawTerm;
+      const sourceEntries = usingRemote ? peopleSuggestions : peopleCatalog;
+      return sourceEntries
         .filter((entry) => {
           if (!entry.id || selectedItemIds.has(entry.id)) {
             return false;
@@ -785,7 +881,7 @@ const catalogById = useMemo(() => {
           type: 'movies',
         };
       });
-  }, [catalog, peopleCatalog, searchTerm, selectedItemIds, selectedList]);
+  }, [catalog, peopleCatalog, peopleSuggestions, searchTerm, selectedItemIds, selectedList, lastPeopleSearch]);
 
   const handleSubmitCreate = async (event) => {
     event.preventDefault();
@@ -1580,7 +1676,7 @@ const catalogById = useMemo(() => {
                       value={searchTerm}
                       placeholder={searchPlaceholder}
                       onChange={(event) => setSearchTerm(event.target.value)}
-                      disabled={searchSourceLoading || !selectedList}
+                      disabled={searchInputDisabled || !selectedList}
                     />
                     {searchSourceLoading ? (
                       <p className="mylist-search__status">Loading {selectedListNoun}...</p>

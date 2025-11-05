@@ -12,6 +12,7 @@ api/api_people/node_modules/
 api/api_users/data/
 api/api_people/data/
 webscrapping/imdb_db/title.basics.tsv
+group_project_movies_series.pptx
 
 # C extensions
 *.so

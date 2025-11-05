@@ -7,10 +7,11 @@ from bson import ObjectId
 from bson.errors import InvalidId
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-from pymongo import DESCENDING, MongoClient
+from pymongo import MongoClient
 import redis
 from datetime import datetime
 
+from users_functions import *
 
 app = Flask(__name__)
 app.config["JSON_SORT_KEYS"] = False
@@ -29,292 +30,17 @@ r = redis.Redis(
     db=int(os.environ.get("REDIS_DB", 0)),
 )
 
-CACHE_TTL_SECONDS = int(os.environ.get("CACHE_TTL_SECONDS", 60))
-
-
-def generate_next_user_id():
-    """Generate the next user identifier in the format 'u000000000001', 'u000000000002', etc."""
-    latest_user = users_collection.find_one(
-        {"_id": {"$regex": r"^u\d{12}$"}},
-        sort=[("_id", DESCENDING)],
-        projection={"_id": 1},
-    )
-    if not latest_user:
-        return "u000000000001"
-
-    raw_identifier = str(latest_user.get("_id", "")).strip()
-    try:
-        numeric = int(raw_identifier[1:])
-    except (ValueError, TypeError):
-        numeric = 0
-
-    return f"u{numeric + 1:012d}"
-
-
-def serialize_document(document):
-    """Serialize a MongoDB document to a JSON-friendly dictionary."""
-    if not document:
-        return {}
-    payload = dict(document)
-    if "_id" in payload and not isinstance(payload["_id"], str):
-        payload["_id"] = str(payload["_id"])
-    payload.pop("password", None)
-    return payload
-
-
-def build_cache_key(prefix, *parts):
-    """Build a Redis cache key with a given prefix and parts."""
-    normalized = [prefix]
-    for part in parts:
-        normalized.append(str(part) if part is not None else "")
-    return ":".join(normalized)
-
-def parse_boolean(value, default=False):
-    """Parse a value into a boolean."""
-    if isinstance(value, bool):
-        return value
-    if isinstance(value, int):
-        return value != 0
-    if isinstance(value, str):
-        normalized = value.strip().lower()
-        if not normalized:
-            return default
-        return normalized in {"1", "true", "yes", "on", "public", "visible"}
-    return default if value is None else bool(value)
-
-def utc_timestamp_iso():
-    """Get the current UTC timestamp."""
-    return datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
-
-def ensure_user_lists(user_doc):
-    """Ensure the user's lists are normalized and return them."""
-    raw_lists = user_doc.get("list") if isinstance(user_doc, dict) else None
-    mutated = False
-    normalized_lists = []
-
-    if not isinstance(raw_lists, list):
-        raw_lists = []
-        mutated = True
-
-    for entry in raw_lists:
-        if not isinstance(entry, dict):
-            mutated = True
-            continue
-
-        list_id = (entry.get("list_id") or entry.get("_id") or "").strip()
-        if not list_id:
-            list_id = f"lst_{uuid4().hex[:12]}"
-            mutated = True
-
-        name = (entry.get("name") or entry.get("title") or "").strip()
-        if not name:
-            name = "Custom List"
-            mutated = True
-
-        description = (entry.get("description") or "").strip()
-
-        list_type_raw = entry.get("type") or entry.get("list_type") or ""
-        list_type = str(list_type_raw).strip().lower()
-        if list_type not in {"movies", "people"}:
-            list_type = "movies"
-            if list_type_raw:
-                mutated = True
-        if not list_type_raw:
-            mutated = True
-
-        created_at = entry.get("created_at")
-        updated_at = entry.get("updated_at")
-        if not created_at:
-            created_at = utc_timestamp_iso()
-            mutated = True
-        if not updated_at:
-            updated_at = created_at
-            mutated = True
-
-        raw_items = entry.get("items")
-        if raw_items is None:
-            raw_items = entry.get("movies_series") or []
-            if raw_items:
-                mutated = True
-
-        normalized_items = []
-        key_name = "person_id" if list_type == "people" else "movie_id"
-        if isinstance(raw_items, list):
-            for item in raw_items:
-                entity_id = ""
-                added_at = None
-                if isinstance(item, dict):
-                    candidates = [
-                        key_name,
-                        "movie_id",
-                        "person_id",
-                        "_id",
-                        "id",
-                    ]
-                    for candidate in candidates:
-                        if candidate in item and item.get(candidate) not in (None, ""):
-                            entity_candidate = item.get(candidate)
-                            entity_id = (
-                                str(entity_candidate).strip()
-                                if not isinstance(entity_candidate, str)
-                                else entity_candidate.strip()
-                            )
-                            if entity_id:
-                                break
-                    added_at = item.get("added_at")
-                elif isinstance(item, str):
-                    entity_id = item.strip()
-                if not entity_id:
-                    mutated = True
-                    continue
-                if not added_at:
-                    added_at = utc_timestamp_iso()
-                    mutated = True
-                normalized_items.append({
-                    key_name: entity_id,
-                    "added_at": added_at,
-                })
-        else:
-            mutated = True
-
-        visibility_raw = entry.get("is_public")
-        if visibility_raw is None:
-            visibility_raw = entry.get("visibility")
-        is_public = parse_boolean(visibility_raw, default=False)
-        if visibility_raw is None and not is_public:
-            mutated = True
-
-        normalized_lists.append({
-            "list_id": list_id,
-            "name": name,
-            "description": description,
-            "items": normalized_items,
-            "created_at": created_at,
-            "updated_at": updated_at,
-            "is_public": is_public,
-            "type": list_type,
-        })
-
-    if mutated and isinstance(user_doc, dict) and user_doc.get("_id") is not None:
-        users_collection.update_one(
-            {"_id": user_doc["_id"]},
-            {"$set": {"list": normalized_lists}},
-        )
-        user_doc["list"] = normalized_lists
-
-    return normalized_lists
-
-def save_user_lists(user_doc, lists):
-    """Save the user's lists to the database and invalidate cache."""
-    users_collection.update_one(
-        {"_id": user_doc["_id"]},
-        {"$set": {"list": lists}},
-    )
-    user_doc["list"] = lists
-    invalidate_user_cache(str(user_doc.get("_id")))
-
-def extract_friend_ids(user_doc):
-    """Extract and normalize friend IDs from the user document."""
-    friends_raw = user_doc.get("friends") if isinstance(user_doc, dict) else None
-    if not friends_raw:
-        return []
-
-    friend_ids = set()
-    for entry in friends_raw:
-        friend_id = None
-        if isinstance(entry, dict):
-            friend_id = (
-                entry.get("_id")
-                or entry.get("id")
-                or entry.get("user_id")
-                or entry.get("username")
-            )
-        else:
-            friend_id = entry
-
-        if not friend_id:
-            continue
-
-        try:
-            friend_ids.add(str(friend_id).strip())
-        except Exception:
-            continue
-
-    normalized = [fid for fid in friend_ids if fid]
-    return normalized
-
-def find_user_list(user_doc, list_id, lists_cache=None):
-    """Find a specific user list by its identifier."""
-    if not list_id:
-        return None
-    lists = lists_cache if lists_cache is not None else ensure_user_lists(user_doc)
-    for entry in lists:
-        if entry.get("list_id") == list_id:
-            return entry
-    return None
-
-
-def invalidate_user_cache(user_id):
-    """Invalidate cache entries related to a specific user."""
-    keys = [
-        build_cache_key("user_detail", user_id),
-        build_cache_key("profile", user_id),
-        build_cache_key("favorites", user_id, ""),
-        build_cache_key("favorites", user_id, "all"),
-    ]
-    for key in keys:
-        try:
-            r.delete(key)
-        except redis.RedisError:
-            continue
-
-
-def invalidate_user_list_cache():
-    """Invalidate all user list cache entries."""
-    try:
-        for key in r.scan_iter("users:*"):
-            r.delete(key)
-    except redis.RedisError:
-        pass
-
-
-def find_user(identifier, projection=None):
-    """Find a user by various identifiers."""
-    if not identifier:
-        return None
-
-    criteria = [
-        {"_id": identifier},
-        {"username": identifier},
-        {"imdb_user_id": identifier},
-        {"_id": {"$regex": f"^{identifier}$", "$options": "i"}},
-        {"username": {"$regex": f"^{identifier}$", "$options": "i"}},
-    ]
-
-    try:
-        criteria.append({"_id": ObjectId(identifier)})
-    except (InvalidId, TypeError):
-        pass
-
-    query = {"$or": criteria}
-    return users_collection.find_one(query, projection)
-
-def add_friend(user_doc, other_id):
-    """Add a friend to the user's friends list."""
-    current_friends = list(user_doc.get("friends") or [])
-    ids_only = [f.get("_id") if isinstance(f, dict) else f for f in current_friends]
-
-    if other_id not in ids_only:
-        current_friends.append({"_id": other_id})
-        users_collection.update_one(
-            {"_id": user_doc["_id"]},
-            {"$set": {"friends": current_friends}}
-        )
+CACHE_TTL_SECONDS = int(os.environ.get("CACHE_TTL_SECONDS", 600))
 
 
 @app.route("/users", methods=["GET"])
 def list_users():
-    """List users with optional search and limit parameters."""
+    """
+    Handle GET requests for the users collection.
+
+    Returns:
+        Response: Flask response with user entries or error payload.
+    """
     search = request.args.get("q")
     limit_param = request.args.get("limit")
 
@@ -346,15 +72,23 @@ def list_users():
 
 
 @app.route("/users/<user_id>", methods=["GET"])
-def get_user_detail(user_id):
-    """Get detailed information about a specific user."""
+def get_user_detail(user_id: str):
+    """
+    Handle GET requests for a single user record.
+
+    Args:
+        user_id (str): Identifier taken from the path segment.
+
+    Returns:
+        Response: Flask response with user data or error payload.
+    """
     cache_key = build_cache_key("user_detail", user_id)
     cached = r.get(cache_key)
     if cached:
         print("user detail cache hit!")
         return jsonify(json.loads(cached))
 
-    document = find_user(user_id)
+    document = find_user(user_id, users_collection)
     if not document:
         return jsonify({"error": "User not found"}), 404
 
@@ -365,7 +99,12 @@ def get_user_detail(user_id):
 
 @app.route("/auth/login", methods=["POST"])
 def authenticate_user():
-    """Authenticate a user with username and password."""
+    """
+    Handle POST requests for user authentication.
+
+    Returns:
+        Response: Flask response with user data or error payload.
+    """
     payload = request.get_json(silent=True) or {}
     username = (payload.get("username") or "").strip()
     password = payload.get("password") or ""
@@ -373,7 +112,7 @@ def authenticate_user():
     if not username or not password:
         return jsonify({"error": "Username and password are required"}), 400
 
-    user = find_user(username)
+    user = find_user(username, users_collection)
     if not user or user.get("password") != password:
         return jsonify({"error": "Invalid credentials"}), 401
 
@@ -381,14 +120,22 @@ def authenticate_user():
     return jsonify(serialized)
 
 @app.route("/auth/login/<user_id>", methods=["PUT"])
-def update_authenticate_user(user_id):
-    """Update a user's username and/or password."""
+def update_authenticate_user(user_id: str):
+    """
+    Handle PUT requests to update login details.
+
+    Args:
+        user_id (str): Identifier extracted from the path.
+
+    Returns:
+        Response: JSON payload indicating success or failure.
+    """
     payload = request.get_json(silent=True) or {}
     new_username = payload.get("username")
     new_password = payload.get("password")
     if not new_username and not new_password:
         return jsonify({"error": "Username and password are required"}), 400
-    user = find_user(user_id)
+    user = find_user(user_id, users_collection)
     if not user:
         return jsonify({"error":"User not found"}), 404
     updates = {}
@@ -401,7 +148,12 @@ def update_authenticate_user(user_id):
 
 @app.route("/auth/register", methods=["POST"])
 def create_user():
-    """Create a new user account."""
+    """
+    Handle POST requests that create user accounts.
+
+    Returns:
+        Response: Flask response with created record or error payload.
+    """
     payload = request.get_json(silent=True) or {}
     username = (payload.get("username") or "").strip()
     password = payload.get("password") or ""
@@ -455,7 +207,7 @@ def create_user():
     member_since = datetime.utcnow().date().isoformat()
 
     new_user = {
-        "_id": generate_next_user_id(),
+        "_id": generate_next_user_id(users_collection),
         "username": username,
         "password": password,
         "email": email,
@@ -479,31 +231,43 @@ def create_user():
             "friends_count": 0,
         },
         "movie_ratings": {},
-        "movie_comments": {},
         "watch_statuses": {},
     }
 
     result = users_collection.insert_one(new_user)
     created_user = users_collection.find_one({"_id": new_user["_id"]})
-    invalidate_user_list_cache()
+    invalidate_user_list_cache(r)
     serialized = serialize_document(created_user)
     return jsonify(serialized), 201
 
 @app.route("/auth/delete/<user_id>", methods=["DELETE"])
-def delete_user(user_id):
-    """Delete a user account."""
+def delete_user(user_id: str):
+    """
+    Handle DELETE requests that remove user accounts.
+
+    Args:
+        user_id (str): Identifier taken from the path segment.
+
+    Returns:
+        Response: Flask response with delete status payload.
+    """
     if not ObjectId.is_valid(user_id):
         return jsonify({"error": "The ID of the user is invalid"}), 400
     user = users_collection.find_one({"_id": ObjectId(user_id)})
     if not user:
         return jsonify({"error": "User not found"}), 404
     users_collection.delete_one({"_id": ObjectId(user_id)})
-    invalidate_user_cache(user_id)
+    invalidate_user_cache(user_id, r)
     return jsonify({"message": "User is successfully deleted"})
 
 @app.route("/myfriends", methods=["GET"])
 def get_my_friends():
-    """Get the list of friends."""
+    """
+    Handle GET requests for the cached friends list.
+
+    Returns:
+        Response: Flask response with friend entries or error payload.
+    """
     cache_key = "my_friends_list"
     cached = r.get(cache_key)
     if cached:
@@ -516,8 +280,16 @@ def get_my_friends():
 
 
 @app.route("/my_friends/<friend_id>", methods=["GET"])
-def get_my_friend(friend_id):
-    """Get a specific friend by ID."""
+def get_my_friend(friend_id: str):
+    """
+    Handle GET requests for a cached friend record.
+
+    Args:
+        friend_id (str): Identifier taken from the path segment.
+
+    Returns:
+        Response: Flask response with friend data or error payload.
+    """
     cache_key = build_cache_key("friend", friend_id)
     cached = r.get(cache_key)
     if cached:
@@ -543,7 +315,12 @@ def get_my_friend(friend_id):
 
 @app.route("/myprofile", methods=["GET"])
 def get_profile():
-    """Get the profile of a user."""
+    """
+    Handle GET requests for profile information.
+
+    Returns:
+        Response: Flask response with profile data or error payload.
+    """
     user_id = request.args.get("user_id")
     if not user_id:
         return jsonify({"error": "user_id query parameter is required"}), 400
@@ -554,7 +331,7 @@ def get_profile():
         print("cache hit! /myprofile")
         return jsonify(json.loads(cached))
 
-    user = find_user(user_id)
+    user = find_user(user_id, users_collection)
     if not user:
         return jsonify({"error": "Profile not found"}), 404
 
@@ -565,7 +342,12 @@ def get_profile():
 
 @app.route("/mylist", methods=["GET"])
 def get_my_list():
-    """Get the favorite movies list of a user."""
+    """
+    Handle GET requests for a user's favorite titles.
+
+    Returns:
+        Response: Flask response with favorites data or error payload.
+    """
     user_id = request.args.get("user_id")
     if not user_id:
         return jsonify({"error": "user_id query parameter is required"}), 400
@@ -583,7 +365,7 @@ def get_my_list():
         return jsonify(json.loads(cached))
 
     projection = {"favorites_movies": 1, "_id": 0}
-    document = find_user(user_id, projection=projection)
+    document = find_user(user_id, users_collection, projection=projection)
     favorites = document.get("favorites_movies") if document else None
     if favorites is None:
         return jsonify({"error": "Favorites not found"}), 404
@@ -594,18 +376,34 @@ def get_my_list():
     return jsonify(favorites)
 
 @app.route("/users/<user_id>/lists", methods=["GET"])
-def get_user_lists(user_id):
-    """Get all lists of a specific user."""
-    user = find_user(user_id)
+def get_user_lists(user_id: str):
+    """
+    Handle GET requests for lists owned by a user.
+
+    Args:
+        user_id (str): Identifier taken from the path segment.
+
+    Returns:
+        Response: Flask response with list data or error payload.
+    """
+    user = find_user(user_id, users_collection)
     if not user:
         return jsonify({"error": "User not found"}), 404
-    lists = ensure_user_lists(user)
+    lists = ensure_user_lists(user, users_collection)
     return jsonify(lists)
 
 @app.route("/users/<user_id>/lists", methods=["POST"])
-def create_user_list(user_id):
-    """Create a new list for a specific user."""
-    user = find_user(user_id)
+def create_user_list(user_id: str):
+    """
+    Handle POST requests that add a list for a user.
+
+    Args:
+        user_id (str): Identifier taken from the path segment.
+
+    Returns:
+        Response: Flask response with created list or error payload.
+    """
+    user = find_user(user_id, users_collection)
     if not user:
         return jsonify({"error": "User not found"}), 404
 
@@ -620,7 +418,7 @@ def create_user_list(user_id):
     if not name:
         return jsonify({"error": "List name is required"}), 400
 
-    lists = ensure_user_lists(user)
+    lists = ensure_user_lists(user, users_collection)
     now = utc_timestamp_iso()
     new_list = {
         "list_id": f"lst_{uuid4().hex[:12]}",
@@ -633,13 +431,21 @@ def create_user_list(user_id):
         "type": list_type,
     }
     lists.append(new_list)
-    save_user_lists(user, lists)
+    save_user_lists(user, lists, users_collection, r)
     return jsonify(new_list), 201
 
 @app.route("/users/<user_id>/friends/lists", methods=["GET"])
-def get_friend_public_lists(user_id):
-    """Get public lists from a user's friends."""
-    user = find_user(user_id)
+def get_friend_public_lists(user_id: str):
+    """
+    Handle GET requests for public lists from friends.
+
+    Args:
+        user_id (str): Identifier taken from the path segment.
+
+    Returns:
+        Response: Flask response with friend list data or error payload.
+    """
+    user = find_user(user_id, users_collection)
     if not user:
         return jsonify({"error": "User not found"}), 404
 
@@ -649,11 +455,11 @@ def get_friend_public_lists(user_id):
 
     public_payload = []
     for friend_id in friend_ids:
-        friend_doc = find_user(friend_id)
+        friend_doc = find_user(friend_id, users_collection)
         if not friend_doc:
             continue
 
-        friend_lists = ensure_user_lists(friend_doc)
+        friend_lists = ensure_user_lists(friend_doc, users_collection)
         visible_lists = []
         for entry in friend_lists:
             if not parse_boolean(entry.get("is_public"), default=False):
@@ -682,14 +488,23 @@ def get_friend_public_lists(user_id):
     return jsonify(public_payload)
 
 @app.route("/users/<user_id>/lists/<list_id>", methods=["PATCH"])
-def update_user_list(user_id, list_id):
-    """Update a specific list of a user."""
-    user = find_user(user_id)
+def update_user_list(user_id: str, list_id: str):
+    """
+    Handle PATCH requests for a user's list.
+
+    Args:
+        user_id (str): User identifier from the path.
+        list_id (str): List identifier from the path.
+
+    Returns:
+        Response: Flask response with updated list or error payload.
+    """
+    user = find_user(user_id, users_collection)
     if not user:
         return jsonify({"error": "User not found"}), 404
 
-    lists = ensure_user_lists(user)
-    target = find_user_list(user, list_id, lists_cache=lists)
+    lists = ensure_user_lists(user, users_collection)
+    target = find_user_list(user, list_id, users_collection, lists_cache=lists)
     if not target:
         return jsonify({"error": "List not found"}), 404
 
@@ -717,33 +532,51 @@ def update_user_list(user_id, list_id):
         return jsonify({"error": "No valid fields to update"}), 400
 
     target["updated_at"] = utc_timestamp_iso()
-    save_user_lists(user, lists)
+    save_user_lists(user, lists, users_collection, r)
     return jsonify(target)
 
 @app.route("/users/<user_id>/lists/<list_id>", methods=["DELETE"])
-def delete_user_list(user_id, list_id):
-    """Delete a specific list of a user."""
-    user = find_user(user_id)
+def delete_user_list(user_id: str, list_id: str):
+    """
+    Handle DELETE requests for a user's list.
+
+    Args:
+        user_id (str): User identifier from the path.
+        list_id (str): List identifier from the path.
+
+    Returns:
+        Response: Flask response with delete status payload.
+    """
+    user = find_user(user_id, users_collection)
     if not user:
         return jsonify({"error": "User not found"}), 404
 
-    lists = ensure_user_lists(user)
+    lists = ensure_user_lists(user, users_collection)
     new_lists = [entry for entry in lists if entry.get("list_id") != list_id]
     if len(new_lists) == len(lists):
         return jsonify({"error": "List not found"}), 404
 
-    save_user_lists(user, new_lists)
+    save_user_lists(user, new_lists, users_collection, r)
     return jsonify({"status": "deleted"})
 
 @app.route("/users/<user_id>/lists/<list_id>/items", methods=["POST"])
-def add_list_item(user_id, list_id):
-    """Add an item to a specific user list."""
-    user = find_user(user_id)
+def add_list_item(user_id: str, list_id: str):
+    """
+    Handle POST requests that insert an entry in a list.
+
+    Args:
+        user_id (str): User identifier from the path.
+        list_id (str): List identifier from the path.
+
+    Returns:
+        Response: Flask response with updated list or error payload.
+    """
+    user = find_user(user_id, users_collection)
     if not user:
         return jsonify({"error": "User not found"}), 404
 
-    lists = ensure_user_lists(user)
-    target = find_user_list(user, list_id, lists_cache=lists)
+    lists = ensure_user_lists(user, users_collection)
+    target = find_user_list(user, list_id, users_collection, lists_cache=lists)
     if not target:
         return jsonify({"error": "List not found"}), 404
 
@@ -787,18 +620,28 @@ def add_list_item(user_id, list_id):
         "added_at": now,
     })
     target["updated_at"] = now
-    save_user_lists(user, lists)
+    save_user_lists(user, lists, users_collection, r)
     return jsonify(target), 201
 
 @app.route("/users/<user_id>/lists/<list_id>/items/<movie_id>", methods=["DELETE"])
-def remove_list_item(user_id, list_id, movie_id):
-    """Remove an item from a specific user list."""
-    user = find_user(user_id)
+def remove_list_item(user_id: str, list_id: str, movie_id: str):
+    """
+    Handle DELETE requests that remove an entry from a list.
+
+    Args:
+        user_id (str): User identifier from the path.
+        list_id (str): List identifier from the path.
+        movie_id (str): Item identifier from the path.
+
+    Returns:
+        Response: Flask response with updated list or error payload.
+    """
+    user = find_user(user_id, users_collection)
     if not user:
         return jsonify({"error": "User not found"}), 404
 
-    lists = ensure_user_lists(user)
-    target = find_user_list(user, list_id, lists_cache=lists)
+    lists = ensure_user_lists(user, users_collection)
+    target = find_user_list(user, list_id, users_collection, lists_cache=lists)
     if not target:
         return jsonify({"error": "List not found"}), 404
 
@@ -819,12 +662,20 @@ def remove_list_item(user_id, list_id, movie_id):
 
     target["items"] = new_items
     target["updated_at"] = utc_timestamp_iso()
-    save_user_lists(user, lists)
+    save_user_lists(user, lists, users_collection, r)
     return jsonify(target)
 
 @app.route("/users/<user_id>/favorites", methods=["POST"])
-def update_user_favorites(user_id):
-    """Update a user's favorite movies."""
+def update_user_favorites(user_id: str):
+    """
+    Handle POST requests that modify movie favorites.
+
+    Args:
+        user_id (str): User identifier from the path.
+
+    Returns:
+        Response: Flask response with favorites data or error payload.
+    """
     payload = request.get_json(silent=True) or {}
     movie_id = (payload.get("movie_id") or "").strip()
     action = (payload.get("action") or "toggle").strip().lower()
@@ -836,7 +687,7 @@ def update_user_favorites(user_id):
     if action not in valid_actions:
         return jsonify({"error": "Unsupported action"}), 400
 
-    user = find_user(user_id)
+    user = find_user(user_id, users_collection)
     if not user:
         return jsonify({"error": "User not found"}), 404
 
@@ -853,13 +704,21 @@ def update_user_favorites(user_id):
 
     users_collection.update_one({"_id": user["_id"]}, {"$set": {"favorites_movies": favorites}})
 
-    invalidate_user_cache(user_id)
+    invalidate_user_cache(user_id, r)
     return jsonify(favorites)
 
 
 @app.route("/users/<user_id>/favorites-people", methods=["POST"])
-def update_user_favorite_people(user_id):
-    """Update a user's favorite people."""
+def update_user_favorite_people(user_id: str):
+    """
+    Handle POST requests that modify people favorites.
+
+    Args:
+        user_id (str): User identifier from the path.
+
+    Returns:
+        Response: Flask response with favorites data or error payload.
+    """
     payload = request.get_json(silent=True) or {}
     person_id = (payload.get("person_id") or "").strip()
     action = (payload.get("action") or "toggle").strip().lower()
@@ -871,7 +730,7 @@ def update_user_favorite_people(user_id):
     if action not in valid_actions:
         return jsonify({"error": "Unsupported action"}), 400
 
-    user = find_user(user_id)
+    user = find_user(user_id, users_collection)
     if not user:
         return jsonify({"error": "User not found"}), 404
 
@@ -890,13 +749,21 @@ def update_user_favorite_people(user_id):
         {"$set": {"favorites_people": favorites}}
     )
 
-    invalidate_user_cache(user_id)
+    invalidate_user_cache(user_id, r)
     return jsonify(favorites)
 
 
 @app.route("/users/<user_id>/watch-status", methods=["POST"])
-def update_watch_status(user_id):
-    """Update a user's watch status for a movie."""
+def update_watch_status(user_id: str):
+    """
+    Handle POST requests that update a watch status entry.
+
+    Args:
+        user_id (str): User identifier from the path.
+
+    Returns:
+        Response: Flask response with status data or error payload.
+    """
     payload = request.get_json(silent=True) or {}
     movie_id = (payload.get("movie_id") or "").strip()
     raw_status = payload.get("status")
@@ -930,7 +797,7 @@ def update_watch_status(user_id):
 
     normalized_status = status_map[normalized_input]
 
-    user = find_user(user_id)
+    user = find_user(user_id, users_collection)
     if not user:
         return jsonify({"error": "User not found"}), 404
 
@@ -949,13 +816,21 @@ def update_watch_status(user_id):
             {"_id": user["_id"]}, {"$unset": {"watch_statuses": ""}}
         )
 
-    invalidate_user_cache(user_id)
+    invalidate_user_cache(user_id, r)
     return jsonify(watch_statuses)
 
 
 @app.route("/users/<user_id>/ratings", methods=["POST"])
-def update_movie_rating(user_id):
-    """Update a user's rating for a movie."""
+def update_movie_rating(user_id: str):
+    """
+    Handle POST requests that set a movie rating.
+
+    Args:
+        user_id (str): User identifier from the path.
+
+    Returns:
+        Response: Flask response with rating data or error payload.
+    """
     payload = request.get_json(silent=True) or {}
     movie_id = (payload.get("movie_id") or "").strip()
     rating_raw = payload.get("rating")
@@ -972,7 +847,7 @@ def update_movie_rating(user_id):
         if rating_value < 1 or rating_value > 5:
             return jsonify({"error": "rating must be between 1 and 5"}), 400
 
-    user = find_user(user_id)
+    user = find_user(user_id, users_collection)
     if not user:
         return jsonify({"error": "User not found"}), 404
 
@@ -992,13 +867,21 @@ def update_movie_rating(user_id):
             {"_id": user["_id"]}, {"$unset": {"movie_ratings": ""}}
         )
 
-    invalidate_user_cache(user_id)
+    invalidate_user_cache(user_id, r)
     return jsonify(ratings)
 
 
 @app.route("/users/<user_id>/comments", methods=["POST"])
-def update_movie_comment(user_id):
-    """Update a user's comment for a movie."""
+def update_movie_comment(user_id: str):
+    """
+    Handle POST requests that set a movie comment.
+
+    Args:
+        user_id (str): User identifier from the path.
+
+    Returns:
+        Response: Flask response with review data or error payload.
+    """
     payload = request.get_json(silent=True) or {}
     movie_id = (payload.get("movie_id") or "").strip()
     comment_raw = payload.get("comment")
@@ -1016,72 +899,61 @@ def update_movie_comment(user_id):
     if len(comment_text) > 2000:
         return jsonify({"error": "comment is too long"}), 400
 
-    user = find_user(user_id)
+    user = find_user(user_id, users_collection)
     if not user:
         return jsonify({"error": "User not found"}), 404
-
-    comments = dict(user.get("movie_comments") or {})
-
-    if comment_text:
-        comments[movie_id] = {
-            "text": comment_text,
-            "updated_at": datetime.utcnow().isoformat() + "Z",
-        }
-    else:
-        comments.pop(movie_id, None)
 
     reviews = user.get("reviews") or []
     if not isinstance(reviews, list):
         reviews = []
 
-    updated_reviews = []
-    review_found = False
-    for entry in reviews:
-        if not isinstance(entry, dict):
-            continue
-        if entry.get("_id") == movie_id:
-            review_found = True
-            if comment_text:
-                updated_entry = dict(entry)
-                updated_entry["review_text"] = comment_text
-                updated_entry["date_posted"] = datetime.utcnow().strftime("%Y-%m-%d")
-                if "helpful_votes" not in updated_entry:
-                    updated_entry["helpful_votes"] = 0
-                updated_reviews.append(updated_entry)
-            # Skip entry if comment removed
-        else:
-            updated_reviews.append(entry)
+    existing_index = next((index for index, entry in enumerate(reviews) if review_matches_movie(entry, movie_id)), -1)
 
-    if comment_text and not review_found:
-        updated_reviews.append(
-            {
-                "_id": movie_id,
-                "review_text": comment_text,
-                "date_posted": datetime.utcnow().strftime("%Y-%m-%d"),
-                "helpful_votes": 0,
-            }
+    updated_reviews = list(reviews)
+    now_iso = utc_timestamp_iso()
+    today = datetime.utcnow().strftime("%Y-%m-%d")
+
+    if comment_text:
+        previous = (
+            updated_reviews[existing_index]
+            if existing_index >= 0 and isinstance(updated_reviews[existing_index], dict)
+            else {}
         )
+        review_entry = dict(previous)
+        review_entry["_id"] = movie_id
+        review_entry["review_text"] = comment_text
+        review_entry["updated_at"] = now_iso
+        if not review_entry.get("date_posted"):
+            review_entry["date_posted"] = today
+        if existing_index >= 0:
+            updated_reviews[existing_index] = review_entry
+        else:
+            updated_reviews.append(review_entry)
+    elif existing_index >= 0:
+        updated_reviews.pop(existing_index)
 
     update_ops = {}
-    if comments:
-        update_ops.setdefault("$set", {})["movie_comments"] = comments
-    else:
-        update_ops.setdefault("$unset", {})["movie_comments"] = ""
-
     if updated_reviews:
-        update_ops.setdefault("$set", {})["reviews"] = updated_reviews
+        update_ops["$set"] = {"reviews": updated_reviews}
     else:
-        update_ops.setdefault("$unset", {})["reviews"] = ""
+        update_ops["$unset"] = {"reviews": ""}
+
+    update_ops.setdefault("$unset", {})["movie_comments"] = ""
 
     if update_ops:
         users_collection.update_one({"_id": user["_id"]}, update_ops)
 
-    invalidate_user_cache(user_id)
-    return jsonify(comments)
+    invalidate_user_cache(user_id, r)
+    return jsonify(updated_reviews)
 
 @app.route("/friend-request", methods=["POST"])
 def send_friend_request():
-    """Send a friend request from one user to another."""
+    """
+    Handle POST requests that create friend requests.
+
+    Returns:
+        Response: Flask response with request data or error payload.
+    """
     data = request.get_json(silent=True) or {}
 
     from_user = (data.get("from_user") or "").strip()
@@ -1093,8 +965,8 @@ def send_friend_request():
     if from_user == to_user:
         return jsonify({"error": "cannot friend yourself"}), 400
 
-    u_from = find_user(from_user)
-    u_to = find_user(to_user)
+    u_from = find_user(from_user, users_collection)
+    u_to = find_user(to_user, users_collection)
     if not u_from or not u_to:
         return jsonify({"error": "user not found"}), 404
 
@@ -1124,9 +996,17 @@ def send_friend_request():
     }), 201
 
 @app.route("/friend-requests/<user_id>", methods=["GET"])
-def get_friend_requests(user_id):
-    """Get pending friend requests for a user."""
-    user = find_user(user_id)
+def get_friend_requests(user_id: str):
+    """
+    Handle GET requests for pending friend requests.
+
+    Args:
+        user_id (str): User identifier from the path.
+
+    Returns:
+        Response: Flask response with request data or error payload.
+    """
+    user = find_user(user_id, users_collection)
     if not user:
         return jsonify({"error": "user not found"}), 404
 
@@ -1137,7 +1017,7 @@ def get_friend_requests(user_id):
     requests_payload = []
     for req in pending:
         sender_id = req.get("from_user")
-        sender_doc = find_user(sender_id)
+        sender_doc = find_user(sender_id, users_collection)
         requests_payload.append({
             "request_id": str(req["_id"]),
             "from_user": sender_id,
@@ -1148,8 +1028,16 @@ def get_friend_requests(user_id):
     return jsonify(requests_payload)
 
 @app.route("/friend-request/<request_id>/accept", methods=["POST"])
-def accept_friend_request(request_id):
-    """Accept a friend request."""
+def accept_friend_request(request_id: str):
+    """
+    Handle POST requests that accept friend requests.
+
+    Args:
+        request_id (str): Request identifier from the path.
+
+    Returns:
+        Response: Flask response with status payload.
+    """
     try:
         fr = friend_requests.find_one({"_id": ObjectId(request_id)})
     except (InvalidId, TypeError):
@@ -1161,26 +1049,34 @@ def accept_friend_request(request_id):
     from_id = fr.get("from_user")
     to_id = fr.get("to_user")
 
-    user_from = find_user(from_id)
-    user_to = find_user(to_id)
+    user_from = find_user(from_id, users_collection)
+    user_to = find_user(to_id, users_collection)
 
     if not user_from or not user_to:
         return jsonify({"error": "user not found"}), 404
 
-    add_friend(user_from, str(user_to["_id"]))
-    add_friend(user_to, str(user_from["_id"]))
+    add_friend(user_from, str(user_to["_id"]), users_collection)
+    add_friend(user_to, str(user_from["_id"]), users_collection)
 
     friend_requests.delete_one({"_id": fr["_id"]})
 
-    invalidate_user_cache(from_id)
-    invalidate_user_cache(to_id)
+    invalidate_user_cache(from_id, r)
+    invalidate_user_cache(to_id, r)
 
     return jsonify({"status": "accepted"})
 
 
 @app.route("/friend-request/<request_id>/refuse", methods=["POST"])
-def refuse_friend_request(request_id):
-    """Refuse a friend request."""
+def refuse_friend_request(request_id: str):
+    """
+    Handle POST requests that refuse friend requests.
+
+    Args:
+        request_id (str): Request identifier from the path.
+
+    Returns:
+        Response: Flask response with status payload.
+    """
     try:
         fr = friend_requests.find_one({"_id": ObjectId(request_id)})
     except (InvalidId, TypeError):
@@ -1194,7 +1090,7 @@ def refuse_friend_request(request_id):
     return jsonify({"status": "refused"})
 
 @app.route("/friend-request/<from_user>/<to_user>/cancel", methods=["POST"])
-def cancel_friend_request(from_user, to_user):
+def cancel_friend_request(from_user: str, to_user: str):
     """Cancel a sent friend request."""
     fr = friend_requests.find_one({
         "from_user": from_user,
@@ -1209,8 +1105,16 @@ def cancel_friend_request(from_user, to_user):
     return jsonify({"status": "cancelled"})
 
 @app.route("/myprofile/<user_id>", methods=["PUT"])
-def update_profile(user_id):
-    """Update a user's profile information."""
+def update_profile(user_id: str):
+    """
+    Handle PUT requests that update profile fields.
+
+    Args:
+        user_id (str): Identifier taken from the path segment.
+
+    Returns:
+        Response: Flask response with updated profile or error payload.
+    """
     payload = request.get_json() or {}
 
     user = users_collection.find_one({"_id": user_id})
@@ -1240,15 +1144,25 @@ def update_profile(user_id):
     updated_user = users_collection.find_one({"_id": user_id})
     updated_user["_id"] = str(updated_user["_id"])
     updated_user.pop("password", None)
+    updated_user.pop("movie_comments", None)
 
     return jsonify(updated_user)
 
 
 @app.route("/users/<user_a>/friends/<user_b>", methods=["DELETE"])
-def delete_friend(user_a, user_b):
-    """"Delete a friend relationship between two users."""
-    user_A = find_user(user_a)
-    user_B = find_user(user_b)
+def delete_friend(user_a: str, user_b: str):
+    """
+    Handle DELETE requests that remove friend links.
+
+    Args:
+        user_a (str): Identifier for the first user.
+        user_b (str): Identifier for the second user.
+
+    Returns:
+        Response: Flask response with status payload.
+    """
+    user_A = find_user(user_a, users_collection)
+    user_B = find_user(user_b, users_collection)
 
     if not user_A or not user_B:
         return jsonify({"error": "user not found"}), 404

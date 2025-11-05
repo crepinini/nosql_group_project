@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import RecommendationRail from './RecommendationRail';
-import { buildMoviesUrl, buildUsersUrl } from '../config';
+import { buildMoviesUrl, buildPeopleUrl, buildUsersUrl } from '../config';
 import {
   getStoredUser,
   subscribeToAuthChanges,
@@ -9,6 +9,7 @@ import './RecommendationsPage.css';
 
 const TARGET_YEAR = 2025;
 const DEFAULT_RECOMMENDATION_LIMIT = 18;
+const MAX_ACTOR_LOOKUPS = 12;
 
 const CATEGORY_CONFIG = [
   {
@@ -49,9 +50,16 @@ const CATEGORY_CONFIG = [
   },
   {
     key: 'actor-favorite',
+    title: 'Cast From Your Favorite Titles',
+    subtitle: 'Titles featuring actors from your favorites favorites.',
+    emptyMessage: 'Save some favorites to unlock cast-based picks.',
+    requiresAuth: true,
+  },
+  {
+    key: 'favorite-actors',
     title: 'Titles Starring Actors You Follow',
     subtitle: 'Actors you follow on screen.',
-    emptyMessage: 'Save some favorites to unlock actor-based picks.',
+    emptyMessage: 'Follow a few actors to unlock these picks.',
     requiresAuth: true,
   },
   {
@@ -117,6 +125,7 @@ const RecommendationsPage = () => {
   const [recommendationsError, setRecommendationsError] = useState(null);
 
   const [viewFilter, setViewFilter] = useState('all');
+  const [favoriteActorNames, setFavoriteActorNames] = useState([]);
 
   useEffect(() => {
     const handleChange = () => setAuthUser(getStoredUser());
@@ -176,6 +185,106 @@ const RecommendationsPage = () => {
     return () => controller.abort();
   }, [authUser]);
 
+  useEffect(() => {
+    const favorites = Array.isArray(profile?.favorites_people)
+      ? profile.favorites_people
+      : [];
+    if (!favorites.length) {
+      setFavoriteActorNames([]);
+      return;
+    }
+
+    const controller = new AbortController();
+    (async () => {
+      const namesSet = new Set();
+      const seenIds = new Set();
+      const idsToLookup = [];
+
+      favorites.forEach((entry) => {
+        if (!entry) {
+          return;
+        }
+        if (typeof entry === 'string') {
+          const trimmed = entry.trim();
+          if (trimmed && !seenIds.has(trimmed)) {
+            seenIds.add(trimmed);
+            idsToLookup.push(trimmed);
+          }
+          return;
+        }
+        if (typeof entry === 'object') {
+          const directName =
+            entry.name ||
+            entry.full_name ||
+            entry.primary_name ||
+            entry.title ||
+            entry.display_name;
+          if (directName) {
+            const trimmedName = String(directName).trim();
+            if (trimmedName) {
+              namesSet.add(trimmedName);
+            }
+          }
+          const candidateIds = [
+            entry._id,
+            entry.person_id,
+            entry.imdb_id,
+            entry.nconst,
+            entry.id,
+          ];
+          candidateIds.forEach((candidate) => {
+            if (!candidate) {
+              return;
+            }
+            const trimmed = String(candidate).trim();
+            if (trimmed && !seenIds.has(trimmed)) {
+              seenIds.add(trimmed);
+              idsToLookup.push(trimmed);
+            }
+          });
+        }
+      });
+
+      const limitedIds = idsToLookup.slice(0, MAX_ACTOR_LOOKUPS);
+      for (const personId of limitedIds) {
+        if (controller.signal.aborted) {
+          return;
+        }
+        if (namesSet.size >= MAX_ACTOR_LOOKUPS) {
+          break;
+        }
+        try {
+          const endpoint = buildPeopleUrl(`/people/${encodeURIComponent(personId)}`);
+          const response = await fetch(endpoint, { signal: controller.signal });
+          if (!response.ok) {
+            continue;
+          }
+          const payload = await response.json();
+          const candidateName =
+            payload?.primary_name ||
+            payload?.name ||
+            payload?.full_name ||
+            payload?.short_name;
+          if (candidateName) {
+            const trimmed = String(candidateName).trim();
+            if (trimmed) {
+              namesSet.add(trimmed);
+            }
+          }
+        } catch (err) {
+          if (err.name === 'AbortError') {
+            return;
+          }
+        }
+      }
+
+      const ordered = Array.from(namesSet).slice(0, MAX_ACTOR_LOOKUPS);
+      setFavoriteActorNames(ordered);
+    })();
+
+    return () => controller.abort();
+  }, [profile]);
+
   const favoriteIds = useMemo(() => {
     const favorites = extractFavorites(profile);
     const seen = new Set();
@@ -207,6 +316,10 @@ const RecommendationsPage = () => {
     () => favoriteIds.slice().sort().join(','),
     [favoriteIds],
   );
+  const favoriteActorsKey = useMemo(
+    () => favoriteActorNames.slice().sort((a, b) => a.localeCompare(b)).join(','),
+    [favoriteActorNames],
+  );
 
   useEffect(() => {
     if (profileLoading) {
@@ -229,6 +342,9 @@ const RecommendationsPage = () => {
         if (favoriteIdsKey) {
           params.set('favorite_ids', favoriteIdsKey);
           params.set('exclude', favoriteIdsKey);
+        }
+        if (favoriteActorsKey) {
+          params.set('actors', favoriteActorNames.join(','));
         }
         const endpoint = buildMoviesUrl(
           `/movies-series/recommendations?${params.toString()}`,
@@ -259,7 +375,7 @@ const RecommendationsPage = () => {
     })();
 
     return () => controller.abort();
-  }, [favoriteIdsKey, profileLoading, viewFilter]);
+  }, [favoriteIdsKey, favoriteActorsKey, profileLoading, viewFilter]);
 
   const sections = useMemo(
     () =>

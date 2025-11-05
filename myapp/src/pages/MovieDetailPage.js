@@ -83,15 +83,42 @@ const extractRatingsMap = (authUser) => {
   return source && typeof source === 'object' ? source : {};
 };
 
-const extractCommentRecord = (authUser, movieId) => {
-  if (!authUser || !movieId) {
+const extractSeededReview = (userDoc, movieId, imdbId) => {
+  if (!userDoc || !movieId) {
     return null;
   }
-  const comments = authUser?.movie_comments;
-  if (!comments || typeof comments !== 'object') {
+  const reviews = Array.isArray(userDoc.reviews) ? userDoc.reviews : [];
+  const normalizedMovieId = String(movieId).trim();
+  const normalizedImdbId = imdbId ? String(imdbId).trim() : '';
+  const match = reviews.find((entry) => {
+    if (!entry || typeof entry !== 'object') {
+      return false;
+    }
+    const candidates = [
+      entry._id,
+      entry.id,
+      entry.movie_id,
+      entry.imdb_id,
+    ]
+      .map((value) => (value === undefined || value === null ? '' : String(value).trim()))
+      .filter(Boolean);
+    if (normalizedMovieId && candidates.includes(normalizedMovieId)) {
+      return true;
+    }
+    if (normalizedImdbId && candidates.includes(normalizedImdbId)) {
+      return true;
+    }
+    return false;
+  });
+  if (!match || typeof match.review_text !== 'string') {
     return null;
   }
-  return comments[movieId] || null;
+  const text = match.review_text.trim();
+  if (!text) {
+    return null;
+  }
+  const updatedAt = match.updated_at || match.date_posted || null;
+  return { text, updated_at: updatedAt };
 };
 
 const formatFriendCommentDate = (value) => {
@@ -342,15 +369,19 @@ const MovieDetailPage = () => {
     const ratingValue = Number(ratingsMap?.[heroMovieId]) || 0;
     setUserRating(ratingValue);
 
-    const commentRecord = extractCommentRecord(authUser, heroMovieId);
+    const reviewRecord = extractSeededReview(
+      authUser,
+      heroMovieId,
+      heroMovieImdbId,
+    );
     const commentText =
-      commentRecord && typeof commentRecord.text === 'string'
-        ? commentRecord.text
+      reviewRecord && typeof reviewRecord.text === 'string'
+        ? reviewRecord.text
         : '';
     setUserComment(commentText);
     setCommentDraft(commentText);
     setIsEditingComment(false);
-  }, [authUser, heroMovieId]);
+  }, [authUser, heroMovieId, heroMovieImdbId]);
 
   useEffect(() => {
     setFavoriteError(null);
@@ -529,50 +560,29 @@ const MovieDetailPage = () => {
         throw new Error(`HTTP ${response.status}`);
       }
 
-      const updatedComments = await response.json();
-      const record = updatedComments?.[heroMovieId];
+      const responseBody = await response.json();
+      const updatedReviews = Array.isArray(responseBody)
+        ? responseBody
+        : [];
+      const record = extractSeededReview(
+        { reviews: updatedReviews },
+        heroMovieId,
+        heroMovieImdbId,
+      );
       const nextComment =
         record && typeof record.text === 'string' ? record.text : '';
       setUserComment(nextComment);
       setCommentDraft(nextComment);
       setIsEditingComment(false);
 
-      const nextUser = {
-        ...authUser,
-        movie_comments: updatedComments,
-      };
-      const updatedReviews = Array.isArray(authUser?.reviews)
-        ? [...authUser.reviews]
-        : [];
-      const existingIndex = updatedReviews.findIndex(
-        (entry) => entry && entry._id === heroMovieId,
-      );
-
-      if (nextComment) {
-        const today = new Date().toISOString().slice(0, 10);
-        const previous = existingIndex >= 0 ? updatedReviews[existingIndex] || {} : {};
-        const helpfulVotes = Number.isFinite(Number(previous?.helpful_votes))
-          ? Number(previous.helpful_votes)
-          : 0;
-        const updatedEntry = {
-          ...previous,
-          _id: heroMovieId,
-          review_text: nextComment,
-          date_posted: today,
-          helpful_votes: helpfulVotes,
-        };
-        if (existingIndex >= 0) {
-          updatedReviews.splice(existingIndex, 1, updatedEntry);
-        } else {
-          updatedReviews.push(updatedEntry);
+      if (authUser) {
+        const nextUser = { ...authUser, reviews: updatedReviews };
+        if (Object.prototype.hasOwnProperty.call(nextUser, 'movie_comments')) {
+          delete nextUser.movie_comments;
         }
-      } else if (existingIndex >= 0) {
-        updatedReviews.splice(existingIndex, 1);
+        setAuthUser(nextUser);
+        storeUser(nextUser);
       }
-
-      nextUser.reviews = updatedReviews;
-      setAuthUser(nextUser);
-      storeUser(nextUser);
     } catch (err) {
       console.error('Failed to update comment', err);
       setCommentError('Unable to save your comment right now.');
@@ -663,15 +673,13 @@ const MovieDetailPage = () => {
 
               const payload = await response.json();
               const friendName = payload.full_name || payload.username || 'Friend';
-              const commentRecord =
-                payload?.movie_comments?.[movieIdentifier] ||
-                (imdbIdentifier ? payload?.movie_comments?.[imdbIdentifier] : null);
+              const commentRecord = extractSeededReview(
+                payload,
+                movieIdentifier,
+                imdbIdentifier,
+              );
 
-              if (
-                commentRecord &&
-                typeof commentRecord.text === 'string' &&
-                commentRecord.text.trim()
-              ) {
+              if (commentRecord && typeof commentRecord.text === 'string' && commentRecord.text.trim()) {
                 commentEntries.push({
                   id: payload._id || friendId,
                   name: friendName,

@@ -36,13 +36,11 @@
                 {
                     "_id": "ms000000000007",
                     "review_text": "An ambitious exploration of love, time, and survival. Zimmer's score still gives me chills.",
-                    "helpful_votes": 342,
                     "date_posted": "2024-11-02"
                 },
                 {
                     "_id": "ms000000000003",
                     "review_text": "Hope, resilience, and friendship wrapped in perfect storytelling. Timeless.",
-                    "helpful_votes": 489,
                     "date_posted": "2023-07-18"
                 }
             ],
@@ -105,13 +103,11 @@
                 {
                     "_id": "ms000000000004",
                     "review_text": "A quiet character study that lingers long after the credits. Stellar performances all around.",
-                    "helpful_votes": 215,
                     "date_posted": "2025-03-22"
                 },
                 {
                     "_id": "ms000000000011",
                     "review_text": "Animation with heart and soaring songs. The ocean-as-character concept is brilliant.",
-                    "helpful_votes": 178,
                     "date_posted": "2024-08-09"
                 }
             ],
@@ -148,41 +144,177 @@
             "location_city": "Bousval",
             "location_country": "Belgium",
             "about_me": "Product designer turning user stories into journeys. I adore vibrant animation and clever twists.",
+            "movie_ratings": {
+                "ms000000000035": 1,
+                "ms000000000170": 5,
+                "ms000000000274": 5,
+                "ms000000000386": 4,
+                "ms000000000452": 5,
+                "ms000000000455": 5,
+                "ms000000000457": 5,
+                "ms000000000460": 5,
+                "ms000000000463": 5,
+                "ms000000000618": 3,
+                "ms000000001172": 5,
+                "ms000000001220": 5,
+                "ms000000001223": 5,
+                "ms000000001248": 4,
+                "ms000000001251": 5
+            },
             "favorites_movies": [
-                {
-                    "_id": "ms000000000001"
-                },
-                {
-                    "_id": "ms000000000005"
-                },
-                {
-                    "_id": "ms000000000011"
-                }
+            {
+                "_id": "ms000000000001"
+            },
+            {
+                "_id": "ms000000000005"
+            },
+            {
+                "_id": "ms000000000011"
+            },
+            {
+                "_id": "ms000000000356"
+            },
+            {
+                "_id": "ms000000000391"
+            },
+            {
+                "_id": "ms000000000463"
+            },
+            {
+                "_id": "ms000000000170"
+            },
+            {
+                "_id": "ms000000000461"
+            },
+            {
+                "_id": "ms000000000457"
+            },
+            {
+                "_id": "ms000000000455"
+            },
+            {
+                "_id": "ms000000000460"
+            },
+            {
+                "_id": "ms000000000452"
+            },
+            {
+                "_id": "ms000000001220"
+            },
+            {
+                "_id": "ms000000001172"
+            },
+            {
+                "_id": "ms000000001223"
+            },
+            {
+                "_id": "ms000000000274"
+            },
+            {
+                "_id": "ms000000001251"
+            }
             ],
             "favorites_people": [
-                {
-                    "_id": "p000000000002"
-                },
-                {
-                    "_id": "p000000000004"
-                },
-                {
-                    "_id": "p000000000011"
-                }
+            {
+                "_id": "p000000000002"
+            },
+            {
+                "_id": "p000000000004"
+            },
+            {
+                "_id": "p000000000011"
+            },
+            {
+                "_id": "p000000009990"
+            },
+            {
+                "_id": "p000000006094"
+            },
+            {
+                "_id": "p000000002294"
+            },
+            {
+                "_id": "p000000002297"
+            },
+            {
+                "_id": "p000000014917"
+            },
+            {
+                "_id": "p000000006061"
+            },
+            {
+                "_id": "p000000006701"
+            },
+            {
+                "_id": "p000000005429"
+            }
             ],
             "reviews": [
-                {
-                    "_id": "ms000000000001",
-                    "review_text": "Childhood magic that still feels epic. The circle of life hits every time.",
-                    "helpful_votes": 301,
-                    "date_posted": "2024-12-01"
-                },
-                {
-                    "_id": "ms000000000005",
-                    "review_text": "Pixar at its most inventive—joy, sadness, and catharsis in one breath.",
-                    "helpful_votes": 264,
-                    "date_posted": "2023-05-30"
-                }
+            {
+                "_id": "ms000000000001",
+                "date_posted": "2024-12-01",
+                "review_text": "Childhood magic that still feels epic. The circle of life hits every time."
+            },
+            {
+                "_id": "ms000000000005",
+                "date_posted": "2023-05-30",
+                "review_text": "Pixar at its most inventive joy, sadness, and catharsis in one breath.",
+                "updated_at": "2025-11-04T22:57:23Z"
+            },
+            {
+                "_id": "ms000000000588",
+                "date_posted": "2025-11-04",
+                "review_text": "Test123",
+                "updated_at": "2025-11-04T22:57:08Z"
+            },
+            {
+                "_id": "ms000000000455",
+                "date_posted": "2025-11-04",
+                "review_text": "A classic!",
+                "updated_at": "2025-11-04T23:22:17Z"
+            },
+            {
+                "_id": "ms000000000460",
+                "date_posted": "2025-11-04",
+                "review_text": "Incredible!!",
+                "updated_at": "2025-11-04T23:22:32Z"
+            },
+            {
+                "_id": "ms000000000452",
+                "date_posted": "2025-11-04",
+                "review_text": "Mufasa <3",
+                "updated_at": "2025-11-04T23:22:56Z"
+            },
+            {
+                "_id": "ms000000001220",
+                "date_posted": "2025-11-04",
+                "review_text": "Can't wait to see it with my kids !",
+                "updated_at": "2025-11-04T23:23:22Z"
+            },
+            {
+                "_id": "ms000000001172",
+                "date_posted": "2025-11-04",
+                "review_text": "So good !",
+                "updated_at": "2025-11-04T23:24:04Z"
+            },
+            {
+                "_id": "ms000000000618",
+                "date_posted": "2025-11-04",
+                "review_text": "Won't recommend",
+                "updated_at": "2025-11-04T23:30:55Z"
+            },
+            {
+                "_id": "ms000000000425",
+                "date_posted": "2025-11-04",
+                "review_text": "Can't wait to watch it!!",
+                "updated_at": "2025-11-04T23:32:58Z"
+            },
+            {
+                "_id": "ms000000001251",
+                "date_posted": "2025-11-04",
+                "review_text": "Must have!",
+                "updated_at": "2025-11-04T23:46:20Z"
+            }
             ],
             "friends": [
                 {
@@ -201,18 +333,242 @@
                 }
             ],
             "list": [
+            {
+                "created_at": "2025-11-04T22:59:38Z",
+                "description": "Loved them!",
+                "is_public": true,
+                "items": [
                 {
-                    "movies_series": [
-                        {
-                            "_id": "ms000000000006"
-                        },
-                        {
-                            "_id": "ms000000000009"
-                        }
-                    ]
+                    "added_at": "2025-11-04T23:47:51Z",
+                    "movie_id": "ms000000000050"
+                },
+                {
+                    "added_at": "2025-11-04T23:47:55Z",
+                    "movie_id": "ms000000000002"
+                },
+                {
+                    "added_at": "2025-11-04T23:48:00Z",
+                    "movie_id": "ms000000000455"
+                },
+                {
+                    "added_at": "2025-11-04T23:48:04Z",
+                    "movie_id": "ms000000000391"
+                },
+                {
+                    "added_at": "2025-11-04T23:48:07Z",
+                    "movie_id": "ms000000000005"
+                },
+                {
+                    "added_at": "2025-11-04T23:48:10Z",
+                    "movie_id": "ms000000000006"
+                },
+                {
+                    "added_at": "2025-11-04T23:48:11Z",
+                    "movie_id": "ms000000000008"
+                },
+                {
+                    "added_at": "2025-11-04T23:48:13Z",
+                    "movie_id": "ms000000000007"
+                },
+                {
+                    "added_at": "2025-11-04T23:48:12Z",
+                    "movie_id": "ms000000000011"
+                },
+                {
+                    "added_at": "2025-11-04T23:48:14Z",
+                    "movie_id": "ms000000000009"
+                },
+                {
+                    "added_at": "2025-11-04T23:48:16Z",
+                    "movie_id": "ms000000000014"
+                },
+                {
+                    "added_at": "2025-11-04T23:48:17Z",
+                    "movie_id": "ms000000000012"
+                },
+                {
+                    "added_at": "2025-11-04T23:48:20Z",
+                    "movie_id": "ms000000000020"
                 }
+                ],
+                "list_id": "lst_8f6028e4cf6a",
+                "name": "Recommendations",
+                "type": "movies",
+                "updated_at": "2025-11-04T23:49:22Z"
+            },
+            {
+                "created_at": "2025-11-04T23:48:55Z",
+                "description": "For me",
+                "is_public": false,
+                "items": [
+                {
+                    "added_at": "2025-11-04T23:48:59Z",
+                    "movie_id": "ms000000000014"
+                },
+                {
+                    "added_at": "2025-11-04T23:49:01Z",
+                    "movie_id": "ms000000000012"
+                },
+                {
+                    "added_at": "2025-11-04T23:49:03Z",
+                    "movie_id": "ms000000000017"
+                },
+                {
+                    "added_at": "2025-11-04T23:49:05Z",
+                    "movie_id": "ms000000000011"
+                },
+                {
+                    "added_at": "2025-11-04T23:49:07Z",
+                    "movie_id": "ms000000000027"
+                },
+                {
+                    "added_at": "2025-11-04T23:49:09Z",
+                    "movie_id": "ms000000000051"
+                },
+                {
+                    "added_at": "2025-11-04T23:49:09Z",
+                    "movie_id": "ms000000000056"
+                },
+                {
+                    "added_at": "2025-11-04T23:49:11Z",
+                    "movie_id": "ms000000000023"
+                },
+                {
+                    "added_at": "2025-11-04T23:49:14Z",
+                    "movie_id": "ms000000000064"
+                },
+                {
+                    "added_at": "2025-11-04T23:49:16Z",
+                    "movie_id": "ms000000000022"
+                },
+                {
+                    "added_at": "2025-11-04T23:49:19Z",
+                    "movie_id": "ms000000000029"
+                }
+                ],
+                "list_id": "lst_732afc79db73",
+                "name": "Personal",
+                "type": "movies",
+                "updated_at": "2025-11-04T23:49:19Z"
+            },
+            {
+                "created_at": "2025-11-04T23:49:29Z",
+                "description": "",
+                "is_public": true,
+                "items": [
+                {
+                    "added_at": "2025-11-04T23:49:34Z",
+                    "movie_id": "ms000000000391"
+                },
+                {
+                    "added_at": "2025-11-04T23:49:37Z",
+                    "movie_id": "ms000000000463"
+                },
+                {
+                    "added_at": "2025-11-04T23:49:41Z",
+                    "movie_id": "ms000000000170"
+                }
+                ],
+                "list_id": "lst_61474451e494",
+                "name": "Baby",
+                "type": "movies",
+                "updated_at": "2025-11-04T23:49:43Z"
+            },
+            {
+                "created_at": "2025-11-04T23:49:58Z",
+                "description": "Best actors",
+                "is_public": true,
+                "items": [
+                {
+                    "added_at": "2025-11-04T23:50:04Z",
+                    "person_id": "nm5940373"
+                },
+                {
+                    "added_at": "2025-11-04T23:50:04Z",
+                    "person_id": "nm2276969"
+                },
+                {
+                    "added_at": "2025-11-04T23:50:06Z",
+                    "person_id": "nm2855501"
+                },
+                {
+                    "added_at": "2025-11-04T23:50:09Z",
+                    "person_id": "nm0946148"
+                },
+                {
+                    "added_at": "2025-11-04T23:50:11Z",
+                    "person_id": "nm13884286"
+                },
+                {
+                    "added_at": "2025-11-04T23:50:13Z",
+                    "person_id": "nm5183361"
+                },
+                {
+                    "added_at": "2025-11-04T23:50:15Z",
+                    "person_id": "nm10612991"
+                },
+                {
+                    "added_at": "2025-11-04T23:50:20Z",
+                    "person_id": "nm1383301"
+                },
+                {
+                    "added_at": "2025-11-04T23:51:00Z",
+                    "person_id": "nm0039148"
+                },
+                {
+                    "added_at": "2025-11-04T23:51:00Z",
+                    "person_id": "nm8488623"
+                },
+                {
+                    "added_at": "2025-11-05T00:19:58Z",
+                    "person_id": "nm12934612"
+                }
+                ],
+                "list_id": "lst_0f8577f9d88a",
+                "name": "Incredible",
+                "type": "people",
+                "updated_at": "2025-11-05T00:19:58Z"
+            }
             ],
-            "watch_statuses": {}
+            "watch_statuses": {
+                "ms000000000035": "watched",
+                "ms000000000050": "plan",
+                "ms000000000118": "plan",
+                "ms000000000154": "plan",
+                "ms000000000170": "watching",
+                "ms000000000184": "watched",
+                "ms000000000207": "watching",
+                "ms000000000249": "plan",
+                "ms000000000274": "watched",
+                "ms000000000356": "watched",
+                "ms000000000377": "plan",
+                "ms000000000386": "watched",
+                "ms000000000391": "watched",
+                "ms000000000425": "plan",
+                "ms000000000452": "watched",
+                "ms000000000455": "watched",
+                "ms000000000457": "watched",
+                "ms000000000460": "watched",
+                "ms000000000461": "watched",
+                "ms000000000463": "watched",
+                "ms000000000487": "plan",
+                "ms000000000518": "plan",
+                "ms000000000618": "watched",
+                "ms000000000823": "plan",
+                "ms000000000860": "plan",
+                "ms000000001172": "watched",
+                "ms000000001220": "watched",
+                "ms000000001223": "watched",
+                "ms000000001241": "watched",
+                "ms000000001248": "watched",
+                "ms000000001251": "watched",
+                "ms000000001258": "watched",
+                "ms000000001406": "watched",
+                "ms000000001421": "plan",
+                "ms000000001439": "watched",
+                "ms000000001551": "plan",
+                "ms000000001690": "plan"
+                }
         },
         {
             "_id": "u000000000004",

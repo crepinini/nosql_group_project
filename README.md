@@ -4,15 +4,19 @@ Movie Maniac delivers the Social Watchlist & Reviews Platform assignment. It let
 
 ## Table of Content
 - [Repository structure](#repository-structure)
+- [Data entities](#data-entities)
 - [Prerequisites](#prerequisites)
 - [Getting started](#getting-started)
 - [docker-compose workflow](#docker-compose-workflow)
-- [Services](#services)
-- [Features](#features)
+- [API CRUD usage](#api-crud-usage)
+- [App features](#app-features)
 - [Data flow](#data-flow)
+- [Webscrapping workflow](#webscrapping-workflow)
 - [Useful commands](#useful-commands)
+- [Task Repartition](#task-repartition)
+- [AI usage](#ai-usage)
 - [References](#references)
-- [Author](#author)
+- [Authors](#authors)
 
 ## Repository structure
 
@@ -32,7 +36,8 @@ nosql_group_project/
 |   |-- api_users/
 |   |   |-- Dockerfile
 |   |   |-- requirements.txt
-|   |   |-- users.py                   # Flask routes, auth, lists, friends
+|   |   |-- users.py                   # Flask routes and entry
+|   |   |-- users_functions.py         # CRUD helpers for auth, lists, friends
 |-- data/
 |   |-- movies_data.json     # Seed dataset for movies and series
 |   |-- people_data.json     # Seed dataset for cast and crew
@@ -78,10 +83,22 @@ nosql_group_project/
 |   |-- seed_movies_series.js # Imports movies_data.json into MongoDB
 |   |-- seed_people.js        # Imports people_data.json into MongoDB
 |   |-- seed_users.js         # Imports users_data.json into MongoDB
-|-- webscrapping/            # Data collection scripts and dumps
+|-- webscrapping/                  # Scripts and data for collection
+|   |-- db/                        # Stores people title cache
+|   |   |-- people_titles_cache.json  # Saves people title pairs
+|   |-- imdb_db/                   # Holds local IMDb extracts
+|   |   |-- database.csv           # List of titles ready for scraping
+|   |   |-- title.basics.tsv       # Base IMDb export (To be added)
+|   |-- class_movies_series.py     # Scrapes data for movies and series
+|   |-- class_people.py            # Builds people dataset from titles
+|   |-- exctracting_movies_series_tt.py  # Filters IMDb export for recent titles
+|   |-- movies_series_functions.py # Shared helpers for movie scraping
+|   |-- people_functions.py        # Shared helpers for people scraping
+|   |-- requirements.txt           # Lists Python packages in use
 |-- docker-compose.yml       # Compose configuration for all services
 |-- .dockerignore            # Docker build exclusions
 |-- .gitignore               # Git exclusions
+|-- presentation.pdf         # Project presentation
 |-- project.pdf              # Project brief and specifications
 ```
 
@@ -130,8 +147,8 @@ nosql_group_project/
 ## Prerequisites
 - Docker Desktop
 - Docker Compose V2
-- Node.js 18 (only if you run React outside Docker)
-- Python 3.10+ (only if you run APIs outside Docker)
+- Node.js 18 
+- Python 3.10+ 
 - PowerShell, Visual Studio Code terminal, or any shell with `curl`
 
 ## Getting started
@@ -173,14 +190,14 @@ docker-compose down
 
 Add `-v` to reset MongoDB and Redis volumes.
 
-## docker-compose 
+## docker-compose workflow
 ### Workflow
 1. `api_movies_series`, `api_users`, and `api_people` build from their Dockerfiles and install the Python dependencies listed in each `requirements.txt`.
 2. `myapp` builds from `myapp/Dockerfile.dev`, runs `npm install` and `npm start`, watches mounted files, and exposes port 3000 (MovieManiac App).
 3. `mongodb` uses the `mongo:7` image, mounts `scripts/seed_*.js`, and imports (seeds MongoDB) every JSON file from `data/` during the first start.
 4. `redis` uses the `redis:7` image, stores data under `redis_data/`, and enables append-only persistence with a health check.
 5. `redisinsight` waits for the Redis health check and exposes a UI on port 5540.
-6. Environment variables in `docker-compose.yml` provide Mongo URIs, Redis URLs, cache TTL, and JSON file paths to the Flask services.
+6. Environment variables in `docker-compose.yml` provide Mongo URIs, Redis URLs, cache TTL, and JSON file paths to the Flask services. The Redis cache TTL is set to 600 seconds by default (`CACHE_TTL_SECONDS=600`).
 7. Volume mounts keep code changes in sync. When you edit Python or React files, containers reload without a rebuild. Run `docker-compose up --build` again after dependency or Dockerfile changes.
 
 ### Services
@@ -202,12 +219,13 @@ Add `-v` to reset MongoDB and Redis volumes.
   - `GET /people` uses to list cast and crew.
   - `GET /people/<id>` uses to read one profile.
 - `api/api_users/users.py`
-  - `POST /login`, and `/users` use for authentication and registration.
-  - `GET /users`, `/users/<id>`, `/profile`, and `/friends` call to read user and network information.
-  - `PUT` routes for users call `update_profile`, `update_authenticate_user`, `update_watch_status`, `update_movie_rating`, `update_movie_comment`, or `update_user_favorites` to edit data.
-  - `DELETE /users/<id>` and `/users/<id>/friends/<friend_id>` use to remove accounts or friendships.
-  - List endpoints (`GET/POST /users/<id>/lists`, `PUT/DELETE /users/<id>/lists/<list_id>`, `POST/DELETE /users/<id>/lists/<list_id>/items`) map to `get_user_lists`, `create_user_list`, `update_user_list`, `delete_user_list`, `add_list_item`, `remove_list_item`.
-  - Friend request endpoints (`POST /friend-requests`, `GET /friend-requests`, `POST /friend-requests/<id>/accept`, `POST /friend-requests/<id>/refuse`, `DELETE /friend-requests`) call `send_friend_request`, `get_friend_requests`, `accept_friend_request`, `refuse_friend_request`, `cancel_friend_request`.
+  - `POST /auth/login` and `/auth/register` use to handle authentication and registration.
+  - `GET /users`, and `/users/<id>` use to read user and network information.
+  - `PUT /auth/login/<id>` and `/myprofile/<id>` use to update login credentials or profile details.
+  - `POST /users/<id>/watch-status`, `/users/<id>/ratings`, `/users/<id>/comments`, `/users/<id>/favorites`, and `/users/<id>/favorites-people` use to update watch state, reviews, and favorites.
+  - `DELETE /auth/delete/<id>` and `/users/<id>/friends/<friend_id>` use to remove accounts or friendships.
+  - `GET /users/<id>/lists`, `POST /users/<id>/lists`, `PATCH /users/<id>/lists/<list_id>`, `DELETE /users/<id>/lists/<list_id>`, `POST /users/<id>/lists/<list_id>/items`, and `DELETE /users/<id>/lists/<list_id>/items/<movie_id>` use to manage personal lists.
+  - `POST /friend-request`, `GET /friend-requests/<user_id>`, `POST /friend-request/<request_id>/accept`, `POST /friend-request/<request_id>/refuse`, and `POST /friend-request/<from_user>/<to_user>/cancel` use to manage friend requests.
 
 ## App features
 localhost:3000 directories:
@@ -230,10 +248,22 @@ localhost:3000 directories:
 - Flask services read MongoDB through PyMongo, cache responses in Redis, and expose REST endpoints.
 - The React client calls the APIs through `setupProxy.js` during development or through container networking when deployed.
 
+## Webscrapping workflow
+The `webscrapping/` directory stores the scraping utilities that generate the seed JSON datasets from IMDb.
+
+1. Install dependencies once with `pip install -r webscrapping/requirements.txt`.
+2. Download the official TSV exports from [datasets.imdbws.com](https://datasets.imdbws.com/) (at minimum `title.basics.tsv.gz`), extract them, and place the resulting `.tsv` files under `webscrapping/imdb_db/`.
+3. Run `python webscrapping/exctracting_movies_series_tt.py` to filter recent movie and series identifiers into `webscrapping/imdb_db/imdb_movies_2009_2020.csv`. The script strips the `tt` prefix and limits the range of years it keeps.
+4. Run `python webscrapping/class_movies_series.py` to visit each IMDb title page, throttle requests, and write the aggregated payload to `data/movies_data.json`. Helper routines in `webscrapping/movies_series_functions.py` handle parsing and rate-limit backoff.
+5. Run `python webscrapping/class_people.py` to expand cast and crew data. It reads the newly generated movies JSON, caches intermediate responses in `webscrapping/db/people_titles_cache.json`, and outputs `data/people_data.json`.
+
+The refreshed JSON files can then be loaded into MongoDB through the seeding scripts. Expect the scrapers to take time and respect IMDb’s usage guidelines, they pause automatically when rate limits are detected.
+
 ## Useful commands
 
 ```powershell
 # Restart myapp
+docker compose restart myapp
 
 # Follow logs from a service
 docker-compose logs -f myapp
@@ -251,9 +281,37 @@ docker exec -it group_movies_series_redis redis-cli
 docker-compose build api_users
 ```
 
+## Task Repartition
+- **Nirina Crépin (crepinini)**
+  - Built Recommendations, Cast & Crew, Movie Detail, People Detail, MyList, and Sign In/Sign Up page.
+  - Set up the repository structure, seeded MongoDB, created `movies_data.json`, `people_data.json`, and initial CRUD in `api_movies_series` and `api_people`. Also created and updated some user CRUD methods in `api_user`.
+- **Salwa Hammou (SalwaHm)**
+  - Built Home, Movies, Series, and WatchList pages with search, filters, pagination, and watchlist login enforcement on those pages.
+  - Created user CRUD methods in `api_user`.
+- **El Maadoudi Mehdi (melmagenwise)**
+  - Built Profile and MyFriends pages, including friend request workflow, profile editing, statistics, and favorite people rails.
+  - Created user CRUD methods in `api_user`.
+
+## AI usage
+### Nirina Crépin
+ChatGPT-5:
+- Used to troubleshoot Python and Flask route issues, accelerating bug isolation.
+- Asked for initial React layout suggestions to bootstrap directory structure and page scaffolding.
+- Queried ChatGPT-5 when searching for where specific UI logic lived across files.
+- Noticed misleading guidance on page margins and fixed the layout by updating `App.js` and related CSS files manually.
+- Used ChatGPT-5 to improve comments, docstrings, and README explanations for grammar and syntax.
+- Learned to :
+  * Increase bug solving speed and issue tracing clarity (used it to resolve a teammate database problem).
+  * Check AI suggestions and verify changes manually to keep styling and layout accurate.
+  * Coordinate fixes across React, Flask, MongoDB, and Redis without losing momentum.
+
+### Salwa Hammou
+- 
+
+### El Maadoudi Mehdi
+- 
+  
 ## References
-- project.pdf
-- homework/file.txt
 - https://github.com/iamshaunjp/Complete-React-Tutorial/tree/lesson-32/dojo-blog
 - https://github.com/daccotta-org/daccotta
 - https://github.com/iamshaunjp/docker-crash-course/tree/lesson-12
@@ -334,9 +392,12 @@ docker-compose build api_users
 - https://www.youtube.com/watch?v=x7niho285qs
 - https://github.com/muhammedsaidkaya/react-nosql-database
 - https://github.com/Vincent440/react-books-search
+- https://datasets.imdbws.com/
 
-## Author
-Nirina Crepin
+## Authors
+Nirina Crépin
+Mehdi El Maadoudi
+Salwa Hammou
 
 
 

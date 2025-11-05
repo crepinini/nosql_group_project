@@ -22,7 +22,7 @@ r = redis.Redis(
     db=int(os.environ.get("REDIS_DB", 0)),
 )
 
-CACHE_TTL_SECONDS = int(os.environ.get("CACHE_TTL_SECONDS", 60))
+CACHE_TTL_SECONDS = int(os.environ.get("CACHE_TTL_SECONDS", 600))
 CACHE_KEYS = {
     "all": "movies_series_all",
     "movies": "movies_only",
@@ -41,6 +41,7 @@ DEFAULT_RECOMMENDATION_CATEGORIES = [
     "top-ranked",
     "critic-favorites",
     "actor-favorite",
+    "favorite-actors",
     "awards-wins",
     "awards-nominations",
 ]
@@ -48,6 +49,12 @@ DEFAULT_RECOMMENDATION_CATEGORIES = [
 
 @app.route("/movies-series", methods=["GET"])
 def get_movies_series():
+    """
+    Handle GET requests for movies and series list.
+
+    Returns:
+        Response: Flask response with JSON payload.
+    """
     cache_key = CACHE_KEYS["all"]
     cached = r.get(cache_key)
     if cached:
@@ -61,10 +68,17 @@ def get_movies_series():
 
 
 @app.route("/movies-series/<movie_id>", methods=["GET"])
-def get_movie_detail(movie_id):
-    document = fetch_single(
-        movies_collection, r, MOVIE_DETAIL_CACHE_PREFIX, CACHE_TTL_SECONDS, movie_id
-    )
+def get_movie_detail(movie_id: str):
+    """
+    Handle GET requests for a movie document.
+
+    Args:
+        movie_id (str): Identifier from the path segment.
+
+    Returns:
+        Response: Flask response with JSON payload and status code.
+    """
+    document = fetch_single(movies_collection, r, MOVIE_DETAIL_CACHE_PREFIX, CACHE_TTL_SECONDS, movie_id)
     if not document:
         return jsonify({"error": "Movie not found"}), 404
 
@@ -73,6 +87,12 @@ def get_movie_detail(movie_id):
 
 @app.route("/movies", methods=["GET"])
 def get_movies():
+    """
+    Handle GET requests for the movies list.
+
+    Returns:
+        Response: Flask response with JSON payload.
+    """
     cache_key = CACHE_KEYS["movies"]
     cached = r.get(cache_key)
     if cached:
@@ -80,15 +100,19 @@ def get_movies():
         return jsonify(json.loads(cached))
 
     print("cache miss Fetching from MongoDB...")
-    items = fetch_documents(
-        movies_collection, {"imdb_type": {"$regex": "^movie$", "$options": "i"}}
-    )
+    items = fetch_documents(movies_collection, {"imdb_type": {"$regex": "^movie$", "$options": "i"}})
     r.setex(cache_key, CACHE_TTL_SECONDS, json.dumps(items))
     return jsonify(items)
 
 
 @app.route("/series", methods=["GET"])
 def get_series():
+    """
+    Handle GET requests for the series list.
+
+    Returns:
+        Response: Flask response with JSON payload.
+    """
     cache_key = CACHE_KEYS["series"]
     cached = r.get(cache_key)
     if cached:
@@ -96,21 +120,20 @@ def get_series():
         return jsonify(json.loads(cached))
 
     print("cache miss Fetching from MongoDB...")
-    items = fetch_documents(
-        movies_collection,
-        {
-            "$or": [
-                {"imdb_type": {"$regex": "^tv", "$options": "i"}},
-                {"imdb_type": {"$not": {"$regex": "^movie$", "$options": "i"}}},
-            ]
-        }
-    )
+    items = fetch_documents(movies_collection, {"$or": [{"imdb_type": {"$regex": "^tv", "$options": "i"}}, {"imdb_type": {"$not": {"$regex": "^movie$", "$options": "i"}}}]})
     r.setex(cache_key, CACHE_TTL_SECONDS, json.dumps(items))
     return jsonify(items)
 
 
 @app.route("/movies-series/recommendations", methods=["GET"])
 def get_movies_series_recommendations():
+    """
+    Handle GET requests for recommendation results.
+
+    Returns:
+        Response: Flask response with JSON payload.
+    """
+    # Parse category filters from the query
     raw_categories = request.args.get("categories")
     if raw_categories:
         requested_categories = []
@@ -123,6 +146,7 @@ def get_movies_series_recommendations():
     else:
         requested_categories = DEFAULT_RECOMMENDATION_CATEGORIES
 
+    # Resolve the requested content type
     raw_type = request.args.get("type")
     if raw_type:
         requested_type = str(raw_type).strip().lower()
@@ -131,24 +155,18 @@ def get_movies_series_recommendations():
     if requested_type not in {"movie", "series", "all"}:
         requested_type = "all"
 
-    limit = parse_limit_param(
-        request.args.get("limit"),
-        DEFAULT_RECOMMENDATION_LIMIT,
-        MAX_RECOMMENDATION_LIMIT,
-    )
+    # Apply limit and year constraints
+    limit = parse_limit_param(request.args.get("limit"), DEFAULT_RECOMMENDATION_LIMIT, MAX_RECOMMENDATION_LIMIT)
     target_year_raw = request.args.get("year")
-    target_year = (
-        safe_int(target_year_raw, DEFAULT_RECOMMENDATION_YEAR)
-        if target_year_raw
-        else DEFAULT_RECOMMENDATION_YEAR
-    )
+    target_year = safe_int(target_year_raw, DEFAULT_RECOMMENDATION_YEAR) if target_year_raw else DEFAULT_RECOMMENDATION_YEAR
     if target_year <= 0:
         target_year = DEFAULT_RECOMMENDATION_YEAR
 
     favorite_ids = parse_identifier_list(request.args.get("favorite_ids"))
     extra_excludes = parse_identifier_list(request.args.get("exclude"))
-    declared_actors = parse_identifier_list(request.args.get("actors"))
+    declared_actor_names = parse_identifier_list(request.args.get("actors"))
 
+    # Load source documents then produce the selection
     documents = fetch_documents(movies_collection)
 
     exclude_ids = build_exclude_set(favorite_ids, extra_excludes)
@@ -158,13 +176,6 @@ def get_movies_series_recommendations():
 
     actor_weights_movies = compute_actor_weights(favorite_movie_docs)
     actor_weights_series = compute_actor_weights(favorite_series_docs)
-
-    if declared_actors:
-        for name in declared_actors:
-            if not name:
-                continue
-            actor_weights_movies[name] = actor_weights_movies.get(name, 0) + 3
-            actor_weights_series[name] = actor_weights_series.get(name, 0) + 3
     actor_weights_all = merge_weight_maps(actor_weights_movies, actor_weights_series)
 
     context = {
@@ -176,6 +187,7 @@ def get_movies_series_recommendations():
             "series": actor_weights_series,
             "all": actor_weights_all,
         },
+        "favorite_actor_names": declared_actor_names or [],
     }
 
     recommendations = {
@@ -188,23 +200,29 @@ def get_movies_series_recommendations():
 
 @app.route("/movies-series/<movie_id>/related", methods=["GET"])
 def get_related_movies_series(movie_id):
-    base_document = fetch_single(
-        movies_collection, r, MOVIE_DETAIL_CACHE_PREFIX, CACHE_TTL_SECONDS, movie_id
-    )
+    """
+    Handle GET requests for titles that share elements with the identifier in the path.
+
+    Args:
+        movie_id (str): Identifier from the path segment.
+
+    Returns:
+        Response: Flask response with JSON payload.
+    """
+    # Fetch the base document used for comparison
+    base_document = fetch_single(movies_collection, r, MOVIE_DETAIL_CACHE_PREFIX, CACHE_TTL_SECONDS, movie_id)
     if not base_document:
         return jsonify({"error": "Movie not found"}), 404
 
+    # Normalize the minimum overlap parameter
     try:
         min_shared = safe_int(request.args.get("min_shared"), 2)
     except (TypeError, ValueError):
         min_shared = 2
     min_shared = max(min_shared, 1)
 
-    limit = parse_limit_param(
-        request.args.get("limit"),
-        DEFAULT_RECOMMENDATION_LIMIT,
-        MAX_RECOMMENDATION_LIMIT,
-    )
+    # Parse the limit and type filters
+    limit = parse_limit_param(request.args.get("limit"), DEFAULT_RECOMMENDATION_LIMIT, MAX_RECOMMENDATION_LIMIT)
     requested_type = request.args.get("type")
     if requested_type:
         requested_type = requested_type.lower()
@@ -215,16 +233,21 @@ def get_related_movies_series(movie_id):
     extra_excludes = parse_identifier_list(request.args.get("exclude"))
     exclude_ids = build_exclude_set(favorite_ids, extra_excludes)
 
+    # Produce related titles that match the filters
     documents = fetch_documents(movies_collection)
-    related = build_related_items(
-        base_document, documents, min_shared, limit, exclude_ids, requested_type
-    )
+    related = build_related_items(base_document, documents, min_shared, limit, exclude_ids, requested_type)
 
     return jsonify(related)
 
 
 @app.route("/movies-series", methods=["POST"])
 def add_movies_series():
+    """
+    Handle POST requests that insert a movie or series.
+
+    Returns:
+        Response: Flask response with JSON payload and status code.
+    """
     payload = build_payload(request.get_json(silent=True))
     if not payload:
         return jsonify({"error": "please provide at least a title"}), 400
@@ -238,6 +261,12 @@ def add_movies_series():
 
 @app.route("/movies", methods=["POST"])
 def add_movies():
+    """
+    Handle POST requests that insert a movie entry.
+
+    Returns:
+        Response: Flask response with JSON payload and status code.
+    """
     payload = build_payload(request.get_json(silent=True), forced_type="Movie")
     if not payload:
         return jsonify({"error": "please provide at least a title"}), 400
@@ -251,6 +280,12 @@ def add_movies():
 
 @app.route("/series", methods=["POST"])
 def add_series():
+    """
+    Handle POST requests that insert a series entry.
+
+    Returns:
+        Response: Flask response with JSON payload and status code.
+    """
     payload = build_payload(request.get_json(silent=True), forced_type="TVSeries")
     if not payload:
         return jsonify({"error": "please provide at least a title"}), 400
