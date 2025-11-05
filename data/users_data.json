@@ -659,12 +659,182 @@
             "location_city": "Namur",
             "location_country": "Belgium",
             "about_me": "Data analyst passionate about cinematography and storytelling patterns. I love charting narrative structures like datasets.",
-            "favorites_movies": [],
-            "favorites_people": [],
-            "reviews": [],
-            "friends": [],
-            "list": [],
-            "watch_statuses": {}
+            "movie_ratings": {
+                "ms000000000050": 4,
+                "ms000000000118": 3,
+                "ms000000000170": 4,
+                "ms000000000184": 5,
+                "ms000000000386": 4,
+                "ms000000000391": 4,
+                "ms000000000455": 5,
+                "ms000000000463": 4,
+                "ms000000001172": 5,
+                "ms000000001220": 5,
+                "ms000000001439": 4
+            },
+            "favorites_movies": [
+                {
+                    "_id": "ms000000000050"
+                },
+                {
+                    "_id": "ms000000000170"
+                },
+                {
+                    "_id": "ms000000000184"
+                },
+                {
+                    "_id": "ms000000000386"
+                },
+                {
+                    "_id": "ms000000000391"
+                },
+                {
+                    "_id": "ms000000000455"
+                },
+                {
+                    "_id": "ms000000000463"
+                },
+                {
+                    "_id": "ms000000001172"
+                },
+                {
+                    "_id": "ms000000001220"
+                },
+                {
+                    "_id": "ms000000001439"
+                }
+            ],
+            "favorites_people": [
+                {
+                    "_id": "p000000000471"
+                },
+                {
+                    "_id": "p000000000941"
+                },
+                {
+                    "_id": "p000000002294"
+                },
+                {
+                    "_id": "p000000005429"
+                },
+                {
+                    "_id": "p000000014917"
+                },
+                {
+                    "_id": "p000000016017"
+                }
+            ],
+            "reviews": [
+                {
+                    "_id": "ms000000000386",
+                    "date_posted": "2025-10-02",
+                    "review_text": "Dense editing but worth dissecting scene by scene.",
+                    "updated_at": "2025-10-02T22:11:09Z"
+                },
+                {
+                    "_id": "ms000000000455",
+                    "date_posted": "2025-09-15",
+                    "review_text": "Frame-perfect tension and sound design.",
+                    "updated_at": "2025-09-15T19:03:42Z"
+                },
+                {
+                    "_id": "ms000000001220",
+                    "date_posted": "2025-08-04",
+                    "review_text": "Data viz dream: every subplot pays off in the finale."
+                },
+                {
+                    "_id": "ms000000000050",
+                    "date_posted": "2025-07-22",
+                    "review_text": "Predictable beats but the cinematography is a lecture in contrast."
+                }
+            ],
+            "friends": [
+                {
+                    "_id": "u000000000005",
+                    "common_favorites": [
+                        "ms000000000391",
+                        "ms000000001172"
+                    ]
+                },
+                {
+                    "_id": "u000000000006",
+                    "common_favorites": [
+                        "ms000000000170",
+                        "ms000000000463"
+                    ]
+                }
+            ],
+            "list": [
+                {
+                    "created_at": "2025-09-03T18:45:12Z",
+                    "description": "Films I annotate for visual analytics workshops.",
+                    "is_public": true,
+                    "items": [
+                        {
+                            "added_at": "2025-09-03T18:46:01Z",
+                            "movie_id": "ms000000000386"
+                        },
+                        {
+                            "added_at": "2025-09-03T18:46:18Z",
+                            "movie_id": "ms000000000455"
+                        },
+                        {
+                            "added_at": "2025-09-03T18:46:31Z",
+                            "movie_id": "ms000000001439"
+                        },
+                        {
+                            "added_at": "2025-09-03T18:46:47Z",
+                            "movie_id": "ms000000001220"
+                        }
+                    ],
+                    "list_id": "lst_a21b64f87d10",
+                    "name": "Shot Composition Lab",
+                    "type": "movies",
+                    "updated_at": "2025-10-07T10:12:45Z"
+                },
+                {
+                    "created_at": "2025-09-10T20:05:55Z",
+                    "description": "DPs and directors I reference in case studies.",
+                    "is_public": false,
+                    "items": [
+                        {
+                            "added_at": "2025-09-10T20:06:21Z",
+                            "person_id": "nm0946148"
+                        },
+                        {
+                            "added_at": "2025-09-10T20:06:40Z",
+                            "person_id": "nm0039148"
+                        },
+                        {
+                            "added_at": "2025-09-10T20:07:02Z",
+                            "person_id": "nm0147147"
+                        },
+                        {
+                            "added_at": "2025-09-10T20:07:18Z",
+                            "person_id": "nm0634240"
+                        }
+                    ],
+                    "list_id": "lst_d47f2085c912",
+                    "name": "Visual Stylists",
+                    "type": "people",
+                    "updated_at": "2025-09-10T20:07:22Z"
+                }
+            ],
+            "watch_statuses": {
+                "ms000000000050": "watched",
+                "ms000000000118": "plan",
+                "ms000000000170": "plan",
+                "ms000000000184": "watched",
+                "ms000000000207": "watching",
+                "ms000000000386": "watched",
+                "ms000000000391": "watching",
+                "ms000000000455": "watched",
+                "ms000000000463": "watching",
+                "ms000000000487": "plan",
+                "ms000000001172": "watched",
+                "ms000000001220": "watched",
+                "ms000000001439": "plan"
+            }
         },
         {
             "_id": "u000000000005",
@@ -673,15 +843,163 @@
             "full_name": "Clara Tissot",
             "member_since": "2023-09-03",
             "birthdate": "2002-03-09",
-            "location_city": "Liège",
+            "location_city": "Liege",
             "location_country": "Belgium",
             "about_me": "Cultural studies student drawn to feminist cinema and poetic imagery. I write mini-essays after every film.",
-            "favorites_movies": [],
-            "favorites_people": [],
-            "reviews": [],
-            "friends": [],
-            "list": [],
-            "watch_statuses": {}
+            "movie_ratings": {
+                "ms000000000035": 4,
+                "ms000000000056": 5,
+                "ms000000000274": 5,
+                "ms000000000356": 4,
+                "ms000000000391": 5,
+                "ms000000000425": 3,
+                "ms000000001172": 5,
+                "ms000000001223": 4,
+                "ms000000001248": 4
+            },
+            "favorites_movies": [
+                {
+                    "_id": "ms000000000056"
+                },
+                {
+                    "_id": "ms000000000274"
+                },
+                {
+                    "_id": "ms000000000356"
+                },
+                {
+                    "_id": "ms000000000391"
+                },
+                {
+                    "_id": "ms000000001172"
+                },
+                {
+                    "_id": "ms000000001223"
+                },
+                {
+                    "_id": "ms000000001248"
+                }
+            ],
+            "favorites_people": [
+                {
+                    "_id": "p000000000471"
+                },
+                {
+                    "_id": "p000000002297"
+                },
+                {
+                    "_id": "p000000013860"
+                },
+                {
+                    "_id": "p000000014886"
+                },
+                {
+                    "_id": "p000000015177"
+                }
+            ],
+            "reviews": [
+                {
+                    "_id": "ms000000000274",
+                    "date_posted": "2025-09-09",
+                    "review_text": "Feminist lens with gorgeous costuming.",
+                    "updated_at": "2025-09-09T21:14:02Z"
+                },
+                {
+                    "_id": "ms000000000391",
+                    "date_posted": "2025-08-12",
+                    "review_text": "Heart-on-sleeve coming-of-age that keeps evolving."
+                },
+                {
+                    "_id": "ms000000001172",
+                    "date_posted": "2025-07-03",
+                    "review_text": "Poetry in motion - every frame is a stanza."
+                },
+                {
+                    "_id": "ms000000000425",
+                    "date_posted": "2025-06-18",
+                    "review_text": "Doc-inspired pacing; I'm torn but intrigued."
+                }
+            ],
+            "friends": [
+                {
+                    "_id": "u000000000004",
+                    "common_favorites": [
+                        "ms000000000391",
+                        "ms000000001172"
+                    ]
+                },
+                {
+                    "_id": "u000000000007",
+                    "common_favorites": [
+                        "ms000000000056",
+                        "ms000000001248"
+                    ]
+                }
+            ],
+            "list": [
+                {
+                    "created_at": "2025-08-01T14:22:10Z",
+                    "description": "Films I'm citing in my dissertation on cinematic sisterhood.",
+                    "is_public": true,
+                    "items": [
+                        {
+                            "added_at": "2025-08-01T14:22:44Z",
+                            "movie_id": "ms000000000274"
+                        },
+                        {
+                            "added_at": "2025-08-01T14:23:02Z",
+                            "movie_id": "ms000000000391"
+                        },
+                        {
+                            "added_at": "2025-08-01T14:23:20Z",
+                            "movie_id": "ms000000001172"
+                        },
+                        {
+                            "added_at": "2025-08-01T14:23:38Z",
+                            "movie_id": "ms000000001223"
+                        }
+                    ],
+                    "list_id": "lst_b6394cfe2184",
+                    "name": "Sisterhood Stories",
+                    "type": "movies",
+                    "updated_at": "2025-09-12T10:32:44Z"
+                },
+                {
+                    "created_at": "2025-08-15T09:11:07Z",
+                    "description": "Directors whose commentary tracks I rewatch for class.",
+                    "is_public": false,
+                    "items": [
+                        {
+                            "added_at": "2025-08-15T09:11:44Z",
+                            "person_id": "nm5183361"
+                        },
+                        {
+                            "added_at": "2025-08-15T09:12:05Z",
+                            "person_id": "nm13884286"
+                        },
+                        {
+                            "added_at": "2025-08-15T09:12:26Z",
+                            "person_id": "nm8488623"
+                        }
+                    ],
+                    "list_id": "lst_c45b7d1ef932",
+                    "name": "Essay Fuel",
+                    "type": "people",
+                    "updated_at": "2025-08-15T09:12:28Z"
+                }
+            ],
+            "watch_statuses": {
+                "ms000000000035": "watched",
+                "ms000000000056": "watched",
+                "ms000000000274": "watched",
+                "ms000000000356": "watched",
+                "ms000000000391": "watching",
+                "ms000000000425": "plan",
+                "ms000000001172": "watched",
+                "ms000000001223": "watching",
+                "ms000000001241": "plan",
+                "ms000000001248": "watched"
+            }
         },
         {
             "_id": "u000000000006",
@@ -693,29 +1011,313 @@
             "location_city": "Charleroi",
             "location_country": "Belgium",
             "about_me": "Junior data engineer. I like slow-burn thrillers, synthwave soundtracks, and villain arcs that make sense.",
-            "favorites_movies": [],
-            "favorites_people": [],
-            "reviews": [],
-            "friends": [],
-            "list": [],
-            "watch_statuses": {}
+            "movie_ratings": {
+                "ms000000000170": 4,
+                "ms000000000207": 4,
+                "ms000000000377": 5,
+                "ms000000000457": 4,
+                "ms000000000463": 5,
+                "ms000000000487": 3,
+                "ms000000000518": 4,
+                "ms000000001406": 4,
+                "ms000000001551": 3
+            },
+            "favorites_movies": [
+                {
+                    "_id": "ms000000000170"
+                },
+                {
+                    "_id": "ms000000000207"
+                },
+                {
+                    "_id": "ms000000000377"
+                },
+                {
+                    "_id": "ms000000000463"
+                },
+                {
+                    "_id": "ms000000001406"
+                },
+                {
+                    "_id": "ms000000001551"
+                }
+            ],
+            "favorites_people": [
+                {
+                    "_id": "p000000000941"
+                },
+                {
+                    "_id": "p000000014966"
+                },
+                {
+                    "_id": "p000000015223"
+                },
+                {
+                    "_id": "p000000016019"
+                },
+                {
+                    "_id": "p000000016611"
+                }
+            ],
+            "reviews": [
+                {
+                    "_id": "ms000000000377",
+                    "date_posted": "2025-10-11",
+                    "review_text": "Tight pacing with synth vibes for days.",
+                    "updated_at": "2025-10-11T23:01:12Z"
+                },
+                {
+                    "_id": "ms000000000463",
+                    "date_posted": "2025-09-27",
+                    "review_text": "Cyberpunk neon, noir soul - instant favorite."
+                },
+                {
+                    "_id": "ms000000001406",
+                    "date_posted": "2025-09-05",
+                    "review_text": "Monster design that actually scares.",
+                    "updated_at": "2025-09-05T22:44:38Z"
+                }
+            ],
+            "friends": [
+                {
+                    "_id": "u000000000004",
+                    "common_favorites": [
+                        "ms000000000170",
+                        "ms000000000463"
+                    ]
+                },
+                {
+                    "_id": "u000000000008",
+                    "common_favorites": [
+                        "ms000000000207",
+                        "ms000000001406"
+                    ]
+                }
+            ],
+            "list": [
+                {
+                    "created_at": "2025-09-20T01:12:05Z",
+                    "description": "Late-night thrillers paired with synth playlists.",
+                    "is_public": true,
+                    "items": [
+                        {
+                            "added_at": "2025-09-20T01:12:44Z",
+                            "movie_id": "ms000000000377"
+                        },
+                        {
+                            "added_at": "2025-09-20T01:13:02Z",
+                            "movie_id": "ms000000000463"
+                        },
+                        {
+                            "added_at": "2025-09-20T01:13:29Z",
+                            "movie_id": "ms000000001406"
+                        }
+                    ],
+                    "list_id": "lst_e59c1a77d4ab",
+                    "name": "Synthwave Nights",
+                    "type": "movies",
+                    "updated_at": "2025-10-01T20:55:13Z"
+                },
+                {
+                    "created_at": "2025-09-25T18:32:47Z",
+                    "description": "Villain arcs with actual motivations.",
+                    "is_public": false,
+                    "items": [
+                        {
+                            "added_at": "2025-09-25T18:33:05Z",
+                            "movie_id": "ms000000000170"
+                        },
+                        {
+                            "added_at": "2025-09-25T18:33:27Z",
+                            "movie_id": "ms000000000487"
+                        },
+                        {
+                            "added_at": "2025-09-25T18:33:52Z",
+                            "movie_id": "ms000000001551"
+                        }
+                    ],
+                    "list_id": "lst_f24de7ab050c",
+                    "name": "Sympathy for the Antagonist",
+                    "type": "movies",
+                    "updated_at": "2025-09-25T18:34:01Z"
+                }
+            ],
+            "watch_statuses": {
+                "ms000000000170": "watching",
+                "ms000000000207": "watching",
+                "ms000000000377": "watched",
+                "ms000000000457": "plan",
+                "ms000000000463": "watched",
+                "ms000000000487": "plan",
+                "ms000000000518": "watching",
+                "ms000000001406": "watched",
+                "ms000000001421": "plan",
+                "ms000000001551": "plan"
+            }
         },
         {
             "_id": "u000000000007",
             "username": "ines_v",
             "password": "ines123",
-            "full_name": "Inès Van Herten",
+            "full_name": "Ines Van Herten",
             "member_since": "2024-06-09",
             "birthdate": "2003-04-12",
-            "location_city": "Anvers",
+            "location_city": "Antwerp",
             "location_country": "Belgium",
             "about_me": "UX student. Obsessed with animated films that are actually for adults, and movies that feel like paintings.",
-            "favorites_movies": [],
-            "favorites_people": [],
-            "reviews": [],
-            "friends": [],
-            "list": [],
-            "watch_statuses": {}
+            "movie_ratings": {
+                "ms000000000011": 5,
+                "ms000000000020": 4,
+                "ms000000000029": 4,
+                "ms000000000056": 5,
+                "ms000000000823": 3,
+                "ms000000001223": 4,
+                "ms000000001241": 4,
+                "ms000000001248": 5,
+                "ms000000001258": 4
+            },
+            "favorites_movies": [
+                {
+                    "_id": "ms000000000011"
+                },
+                {
+                    "_id": "ms000000000020"
+                },
+                {
+                    "_id": "ms000000000029"
+                },
+                {
+                    "_id": "ms000000000056"
+                },
+                {
+                    "_id": "ms000000001223"
+                },
+                {
+                    "_id": "ms000000001248"
+                },
+                {
+                    "_id": "ms000000001258"
+                }
+            ],
+            "favorites_people": [
+                {
+                    "_id": "p000000000004"
+                },
+                {
+                    "_id": "p000000000011"
+                },
+                {
+                    "_id": "p000000014886"
+                },
+                {
+                    "_id": "p000000015223"
+                },
+                {
+                    "_id": "p000000016017"
+                }
+            ],
+            "reviews": [
+                {
+                    "_id": "ms000000000011",
+                    "date_posted": "2025-09-01",
+                    "review_text": "Painterly colors and a heroine who actually gets nuance."
+                },
+                {
+                    "_id": "ms000000000056",
+                    "date_posted": "2025-08-22",
+                    "review_text": "Animation as adult storytelling - gorgeous!",
+                    "updated_at": "2025-08-22T17:54:09Z"
+                },
+                {
+                    "_id": "ms000000001248",
+                    "date_posted": "2025-07-17",
+                    "review_text": "Feels like an art museum at 24 fps."
+                },
+                {
+                    "_id": "ms000000001258",
+                    "date_posted": "2025-07-08",
+                    "review_text": "Inventive sci-fi palette and fantastic wardrobe."
+                }
+            ],
+            "friends": [
+                {
+                    "_id": "u000000000005",
+                    "common_favorites": [
+                        "ms000000000056",
+                        "ms000000001248"
+                    ]
+                },
+                {
+                    "_id": "u000000000009",
+                    "common_favorites": [
+                        "ms000000000029",
+                        "ms000000001223"
+                    ]
+                }
+            ],
+            "list": [
+                {
+                    "created_at": "2025-08-05T16:09:33Z",
+                    "description": "Animation that inspires my UI color palettes.",
+                    "is_public": true,
+                    "items": [
+                        {
+                            "added_at": "2025-08-05T16:09:58Z",
+                            "movie_id": "ms000000000011"
+                        },
+                        {
+                            "added_at": "2025-08-05T16:10:10Z",
+                            "movie_id": "ms000000000056"
+                        },
+                        {
+                            "added_at": "2025-08-05T16:10:25Z",
+                            "movie_id": "ms000000001248"
+                        },
+                        {
+                            "added_at": "2025-08-05T16:10:38Z",
+                            "movie_id": "ms000000001258"
+                        }
+                    ],
+                    "list_id": "lst_97bd4c5aa381",
+                    "name": "Palette Inspo",
+                    "type": "movies",
+                    "updated_at": "2025-09-04T12:00:12Z"
+                },
+                {
+                    "created_at": "2025-08-18T11:44:07Z",
+                    "description": "Designers & directors with dreamy visual beats.",
+                    "is_public": false,
+                    "items": [
+                        {
+                            "added_at": "2025-08-18T11:44:32Z",
+                            "person_id": "nm12934612"
+                        },
+                        {
+                            "added_at": "2025-08-18T11:44:51Z",
+                            "person_id": "nm10612991"
+                        },
+                        {
+                            "added_at": "2025-08-18T11:45:12Z",
+                            "person_id": "nm13884286"
+                        }
+                    ],
+                    "list_id": "lst_4f2c0d87b1e6",
+                    "name": "Dreamy Frames",
+                    "type": "people",
+                    "updated_at": "2025-08-18T11:45:14Z"
+                }
+            ],
+            "watch_statuses": {
+                "ms000000000011": "watched",
+                "ms000000000020": "watching",
+                "ms000000000029": "watched",
+                "ms000000000056": "watched",
+                "ms000000000823": "plan",
+                "ms000000001223": "watching",
+                "ms000000001241": "plan",
+                "ms000000001248": "watched",
+                "ms000000001258": "watching"
+            }
         },
         {
             "_id": "u000000000008",
@@ -727,12 +1329,154 @@
             "location_city": "Brussels",
             "location_country": "Belgium",
             "about_me": "Cloud / DevOps intern. I watch war films and space epics at 2am and then fall asleep in class.",
-            "favorites_movies": [],
-            "favorites_people": [],
-            "reviews": [],
-            "friends": [],
-            "list": [],
-            "watch_statuses": {}
+            "movie_ratings": {
+                "ms000000000118": 4,
+                "ms000000000154": 3,
+                "ms000000000184": 4,
+                "ms000000000207": 4,
+                "ms000000000249": 3,
+                "ms000000000463": 4,
+                "ms000000000860": 5,
+                "ms000000001406": 4,
+                "ms000000001690": 4
+            },
+            "favorites_movies": [
+                {
+                    "_id": "ms000000000118"
+                },
+                {
+                    "_id": "ms000000000184"
+                },
+                {
+                    "_id": "ms000000000207"
+                },
+                {
+                    "_id": "ms000000000463"
+                },
+                {
+                    "_id": "ms000000000860"
+                },
+                {
+                    "_id": "ms000000001406"
+                },
+                {
+                    "_id": "ms000000001690"
+                }
+            ],
+            "favorites_people": [
+                {
+                    "_id": "p000000000471"
+                },
+                {
+                    "_id": "p000000014917"
+                },
+                {
+                    "_id": "p000000015177"
+                },
+                {
+                    "_id": "p000000015223"
+                },
+                {
+                    "_id": "p000000016611"
+                }
+            ],
+            "reviews": [
+                {
+                    "_id": "ms000000000860",
+                    "date_posted": "2025-10-08",
+                    "review_text": "Dogfights, drones, and an adrenaline spike of a score.",
+                    "updated_at": "2025-10-08T02:14:45Z"
+                },
+                {
+                    "_id": "ms000000001406",
+                    "date_posted": "2025-09-29",
+                    "review_text": "Creature feature with practical effects that slap."
+                },
+                {
+                    "_id": "ms000000000207",
+                    "date_posted": "2025-09-12",
+                    "review_text": "Tense tactical set pieces; the third act drags a bit."
+                }
+            ],
+            "friends": [
+                {
+                    "_id": "u000000000006",
+                    "common_favorites": [
+                        "ms000000000207",
+                        "ms000000001406"
+                    ]
+                },
+                {
+                    "_id": "u000000000010",
+                    "common_favorites": [
+                        "ms000000000463",
+                        "ms000000001406"
+                    ]
+                }
+            ],
+            "list": [
+                {
+                    "created_at": "2025-09-08T02:41:19Z",
+                    "description": "Queue for post-midnight war & space marathons.",
+                    "is_public": true,
+                    "items": [
+                        {
+                            "added_at": "2025-09-08T02:41:45Z",
+                            "movie_id": "ms000000000118"
+                        },
+                        {
+                            "added_at": "2025-09-08T02:41:57Z",
+                            "movie_id": "ms000000000207"
+                        },
+                        {
+                            "added_at": "2025-09-08T02:42:14Z",
+                            "movie_id": "ms000000000860"
+                        },
+                        {
+                            "added_at": "2025-09-08T02:42:33Z",
+                            "movie_id": "ms000000001406"
+                        }
+                    ],
+                    "list_id": "lst_63f1d8ea4d23",
+                    "name": "Graveyard Shift",
+                    "type": "movies",
+                    "updated_at": "2025-10-04T00:15:08Z"
+                },
+                {
+                    "created_at": "2025-09-18T07:12:05Z",
+                    "description": "Scenes to test render farm pipeline.",
+                    "is_public": false,
+                    "items": [
+                        {
+                            "added_at": "2025-09-18T07:12:31Z",
+                            "movie_id": "ms000000000154"
+                        },
+                        {
+                            "added_at": "2025-09-18T07:12:49Z",
+                            "movie_id": "ms000000000249"
+                        },
+                        {
+                            "added_at": "2025-09-18T07:13:05Z",
+                            "movie_id": "ms000000001690"
+                        }
+                    ],
+                    "list_id": "lst_7ad51c9035bf",
+                    "name": "Render Stress Tests",
+                    "type": "movies",
+                    "updated_at": "2025-09-18T07:13:07Z"
+                }
+            ],
+            "watch_statuses": {
+                "ms000000000118": "plan",
+                "ms000000000154": "plan",
+                "ms000000000184": "watched",
+                "ms000000000207": "watching",
+                "ms000000000249": "plan",
+                "ms000000000463": "watching",
+                "ms000000000860": "watched",
+                "ms000000001406": "watched",
+                "ms000000001690": "plan"
+            }
         },
         {
             "_id": "u000000000009",
@@ -744,12 +1488,160 @@
             "location_city": "Louvain-la-Neuve",
             "location_country": "Belgium",
             "about_me": "Marketing & comms student. I live for A24 vibes, messy characters, and killer color grading.",
-            "favorites_movies": [],
-            "favorites_people": [],
-            "reviews": [],
-            "friends": [],
-            "list": [],
-            "watch_statuses": {}
+            "movie_ratings": {
+                "ms000000000029": 4,
+                "ms000000000035": 5,
+                "ms000000000377": 4,
+                "ms000000000391": 5,
+                "ms000000000457": 4,
+                "ms000000001223": 5,
+                "ms000000001248": 4,
+                "ms000000001439": 5
+            },
+            "favorites_movies": [
+                {
+                    "_id": "ms000000000029"
+                },
+                {
+                    "_id": "ms000000000035"
+                },
+                {
+                    "_id": "ms000000000377"
+                },
+                {
+                    "_id": "ms000000000391"
+                },
+                {
+                    "_id": "ms000000000457"
+                },
+                {
+                    "_id": "ms000000001223"
+                },
+                {
+                    "_id": "ms000000001248"
+                },
+                {
+                    "_id": "ms000000001439"
+                }
+            ],
+            "favorites_people": [
+                {
+                    "_id": "p000000000941"
+                },
+                {
+                    "_id": "p000000013860"
+                },
+                {
+                    "_id": "p000000014917"
+                },
+                {
+                    "_id": "p000000014966"
+                },
+                {
+                    "_id": "p000000015223"
+                }
+            ],
+            "reviews": [
+                {
+                    "_id": "ms000000000035",
+                    "date_posted": "2025-10-06",
+                    "review_text": "The color theory masterclass I keep referencing.",
+                    "updated_at": "2025-10-06T21:43:02Z"
+                },
+                {
+                    "_id": "ms000000000391",
+                    "date_posted": "2025-09-21",
+                    "review_text": "Messy characters with perfect branding instincts."
+                },
+                {
+                    "_id": "ms000000000457",
+                    "date_posted": "2025-09-10",
+                    "review_text": "Sharp marketing beats, even sharper lighting."
+                },
+                {
+                    "_id": "ms000000001439",
+                    "date_posted": "2025-08-30",
+                    "review_text": "Climax hits like a campaign launch."
+                }
+            ],
+            "friends": [
+                {
+                    "_id": "u000000000007",
+                    "common_favorites": [
+                        "ms000000000029",
+                        "ms000000001223"
+                    ]
+                },
+                {
+                    "_id": "u000000000010",
+                    "common_favorites": [
+                        "ms000000000457",
+                        "ms000000001439"
+                    ]
+                }
+            ],
+            "list": [
+                {
+                    "created_at": "2025-10-01T19:05:22Z",
+                    "description": "Moodboard for my campaign storyboard class.",
+                    "is_public": true,
+                    "items": [
+                        {
+                            "added_at": "2025-10-01T19:05:54Z",
+                            "movie_id": "ms000000000035"
+                        },
+                        {
+                            "added_at": "2025-10-01T19:06:07Z",
+                            "movie_id": "ms000000000391"
+                        },
+                        {
+                            "added_at": "2025-10-01T19:06:26Z",
+                            "movie_id": "ms000000001223"
+                        },
+                        {
+                            "added_at": "2025-10-01T19:06:44Z",
+                            "movie_id": "ms000000001439"
+                        }
+                    ],
+                    "list_id": "lst_52d9b6f0a3c7",
+                    "name": "Campaign Moodboard",
+                    "type": "movies",
+                    "updated_at": "2025-10-12T16:18:39Z"
+                },
+                {
+                    "created_at": "2025-10-05T08:32:11Z",
+                    "description": "Color graders & DPs I'm stalking on Insta.",
+                    "is_public": false,
+                    "items": [
+                        {
+                            "added_at": "2025-10-05T08:32:28Z",
+                            "person_id": "nm0039148"
+                        },
+                        {
+                            "added_at": "2025-10-05T08:32:44Z",
+                            "person_id": "nm0634240"
+                        },
+                        {
+                            "added_at": "2025-10-05T08:33:02Z",
+                            "person_id": "nm1383301"
+                        }
+                    ],
+                    "list_id": "lst_8b7fa0d4c2e1",
+                    "name": "Neon Collaborators",
+                    "type": "people",
+                    "updated_at": "2025-10-05T08:33:04Z"
+                }
+            ],
+            "watch_statuses": {
+                "ms000000000029": "watched",
+                "ms000000000035": "watched",
+                "ms000000000377": "plan",
+                "ms000000000391": "watched",
+                "ms000000000457": "watching",
+                "ms000000001223": "watched",
+                "ms000000001248": "watched",
+                "ms000000001439": "watching"
+            }
         },
         {
             "_id": "u000000000010",
@@ -761,12 +1653,169 @@
             "location_city": "Mons",
             "location_country": "Belgium",
             "about_me": "Game dev student. I love practical effects, creature design, and any movie with disgusting aliens.",
-            "favorites_movies": [],
-            "favorites_people": [],
-            "reviews": [],
-            "friends": [],
-            "list": [],
-            "watch_statuses": {}
+            "movie_ratings": {
+                "ms000000000118": 4,
+                "ms000000000170": 4,
+                "ms000000000457": 3,
+                "ms000000000463": 5,
+                "ms000000000487": 3,
+                "ms000000000518": 4,
+                "ms000000000860": 4,
+                "ms000000001258": 4,
+                "ms000000001406": 5,
+                "ms000000001439": 4,
+                "ms000000001690": 4
+            },
+            "favorites_movies": [
+                {
+                    "_id": "ms000000000118"
+                },
+                {
+                    "_id": "ms000000000170"
+                },
+                {
+                    "_id": "ms000000000457"
+                },
+                {
+                    "_id": "ms000000000463"
+                },
+                {
+                    "_id": "ms000000000860"
+                },
+                {
+                    "_id": "ms000000001258"
+                },
+                {
+                    "_id": "ms000000001406"
+                },
+                {
+                    "_id": "ms000000001439"
+                },
+                {
+                    "_id": "ms000000001690"
+                }
+            ],
+            "favorites_people": [
+                {
+                    "_id": "p000000000941"
+                },
+                {
+                    "_id": "p000000014966"
+                },
+                {
+                    "_id": "p000000015223"
+                },
+                {
+                    "_id": "p000000016019"
+                },
+                {
+                    "_id": "p000000016611"
+                }
+            ],
+            "reviews": [
+                {
+                    "_id": "ms000000000463",
+                    "date_posted": "2025-10-03",
+                    "review_text": "Perfect blend of practical gore and digital polish.",
+                    "updated_at": "2025-10-03T23:55:01Z"
+                },
+                {
+                    "_id": "ms000000000860",
+                    "date_posted": "2025-09-24",
+                    "review_text": "Spaceship dogfights inspire half my shaders."
+                },
+                {
+                    "_id": "ms000000000457",
+                    "date_posted": "2025-09-11",
+                    "review_text": "Great creature close-ups for animation studies."
+                },
+                {
+                    "_id": "ms000000001406",
+                    "date_posted": "2025-08-28",
+                    "review_text": "Animatronics + slime = chef's kiss."
+                }
+            ],
+            "friends": [
+                {
+                    "_id": "u000000000008",
+                    "common_favorites": [
+                        "ms000000000463",
+                        "ms000000001406"
+                    ]
+                },
+                {
+                    "_id": "u000000000009",
+                    "common_favorites": [
+                        "ms000000000457",
+                        "ms000000001439"
+                    ]
+                }
+            ],
+            "list": [
+                {
+                    "created_at": "2025-09-14T22:14:33Z",
+                    "description": "Creature features to steal particle ideas from.",
+                    "is_public": true,
+                    "items": [
+                        {
+                            "added_at": "2025-09-14T22:14:58Z",
+                            "movie_id": "ms000000000463"
+                        },
+                        {
+                            "added_at": "2025-09-14T22:15:14Z",
+                            "movie_id": "ms000000000860"
+                        },
+                        {
+                            "added_at": "2025-09-14T22:15:31Z",
+                            "movie_id": "ms000000001406"
+                        },
+                        {
+                            "added_at": "2025-09-14T22:15:47Z",
+                            "movie_id": "ms000000001258"
+                        }
+                    ],
+                    "list_id": "lst_3d4f7b20ce91",
+                    "name": "Creature Workshop",
+                    "type": "movies",
+                    "updated_at": "2025-10-02T11:48:26Z"
+                },
+                {
+                    "created_at": "2025-09-22T13:20:05Z",
+                    "description": "Storyboard references for my capstone game.",
+                    "is_public": false,
+                    "items": [
+                        {
+                            "added_at": "2025-09-22T13:20:26Z",
+                            "movie_id": "ms000000000170"
+                        },
+                        {
+                            "added_at": "2025-09-22T13:20:45Z",
+                            "movie_id": "ms000000000457"
+                        },
+                        {
+                            "added_at": "2025-09-22T13:21:02Z",
+                            "movie_id": "ms000000001439"
+                        }
+                    ],
+                    "list_id": "lst_64c1e9ab0f52",
+                    "name": "Capstone Boards",
+                    "type": "movies",
+                    "updated_at": "2025-09-22T13:21:05Z"
+                }
+            ],
+            "watch_statuses": {
+                "ms000000000118": "plan",
+                "ms000000000170": "watching",
+                "ms000000000457": "watching",
+                "ms000000000463": "watched",
+                "ms000000000487": "plan",
+                "ms000000000518": "watching",
+                "ms000000000860": "watched",
+                "ms000000001258": "watching",
+                "ms000000001406": "watched",
+                "ms000000001439": "watching",
+                "ms000000001690": "plan"
+            }
         }
     ]
 }

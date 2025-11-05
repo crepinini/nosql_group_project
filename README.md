@@ -7,6 +7,7 @@ Movie Maniac delivers the Social Watchlist & Reviews Platform assignment. It let
 - [Data entities](#data-entities)
 - [Prerequisites](#prerequisites)
 - [Getting started](#getting-started)
+- [User connection](#user-connection)
 - [docker-compose workflow](#docker-compose-workflow)
 - [API CRUD usage](#api-crud-usage)
 - [App features](#app-features)
@@ -189,6 +190,10 @@ docker-compose down
 ```
 
 Add `-v` to reset MongoDB and Redis volumes.
+
+## User connection
+
+You can sign in with each profile. The password uses the first name in lowercase followed by `123`; for `nirina_c`, the password is `nirina123`. The Flask API does not output passwords, so use the JSON file when you need to confirm them. You can also create profile entries and sign in with them to try the functions from the platform (see `data/users_data.json` for password).
 
 ## docker-compose workflow
 ### Workflow
@@ -402,9 +407,9 @@ ChatGPT-5
 - https://datasets.imdbws.com/
 
 ## Authors
-Nirina Crépin
-Mehdi El Maadoudi
-Salwa Hammou
+* Nirina Crépin
+* Mehdi El Maadoudi
+* Salwa Hammou
 
 
 
