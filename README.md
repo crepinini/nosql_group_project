@@ -309,8 +309,15 @@ ChatGPT-5:
 - 
 
 ### El Maadoudi Mehdi
-- 
-  
+ChatGPT-5
+- Used for troubleshooting on routes.
+- Asked it to help me understand the "OPTIONS" method and why it needed the use of flask-CORS when working on friend requests.
+- Used it for frontend development as I had no knowledge of React prior to this project.
+- Learned to :
+  * debug and understand issues that were lying in my code
+  * understand the principle of CORS and when it becomes necessary
+  * keep the frontend coherent between pages
+
 ## References
 - https://github.com/iamshaunjp/Complete-React-Tutorial/tree/lesson-32/dojo-blog
 - https://github.com/daccotta-org/daccotta
