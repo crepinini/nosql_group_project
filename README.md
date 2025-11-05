@@ -193,7 +193,7 @@ Add `-v` to reset MongoDB and Redis volumes.
 
 ## User connection
 
-You can sign in with each profile. The password uses the first name in lowercase followed by `123`; for `nirina_c`, the password is `nirina123`. The Flask API does not output passwords, so use the JSON file when you need to confirm them. You can also create profile entries and sign in with them to try the functions from the platform (see `data/users_data.json` for password).
+You can sign in with each profile. The password uses the first name in lowercase followed by `123`; for `nirina_c`, the password is `nirina123`. The Flask API does not output passwords, so use the JSON file when you need to confirm them. You can also create profile entries and sign in with them to try the functions from the platform (see `data/users_data.json` for passwords).
 
 ## docker-compose workflow
 ### Workflow
@@ -288,14 +288,14 @@ docker-compose build api_users
 
 ## Task Repartition
 - **Nirina Crépin (crepinini)**
-  - Built Recommendations, Cast & Crew, Movie Detail, People Detail, MyList, and Sign In/Sign Up page.
-  - Set up the repository structure, authentification, seeded MongoDB, created `movies_data.json`, `people_data.json`, and initial CRUD in `api_movies_series` and `api_people`. Also created and updated some user CRUD methods in `api_user`.
+  - Built Recommendations, Cast & Crew, Movie Detail, People Detail, MyLists, Sign In/Sign Up page, and movies/series/people webscrapping.
+  - Set up the repository structure, authentification, seeded MongoDB, REACT proxy, created `movies_data.json`, `people_data.json`, and initial CRUD in `api_movies_series` and `api_people`. Also created and updated some user CRUD methods in `api_user`.
 - **Salwa Hammou (SalwaHm)**
-  - Built Home, Movies, Series, and WatchList pages with search, filters, pagination, and watchlist login enforcement on those pages.
-  - Created user CRUD methods in `api_user` and Connection to MongoDb & Redis 
-- **El Maadoudi Mehdi (melmagenwise)**
-  - Built Profile and MyFriends pages, including friend request workflow, profile editing, statistics, and favorite people rails.
-  - Created user CRUD methods in `api_user`.
+  - Built MyHome, Movies, Series, and WatchList pages with search, filters, pagination, and watchlist login enforcement on those pages.
+  - Created user CRUD methods in `api_user` and set up the wire of the `api_user` services to MongoDb & Redis.
+- **El Maadoudi Mehdi (melmagenwise & Melmaado)**
+  - Built MyProfile and MyFriends pages, including friend request workflow, profile editing, statistics, and favorite people rails.
+  - Created `users_data.json` database and CRUD methods in `api_user`.
 
 ## AI usage
 ### Nirina Crépin
