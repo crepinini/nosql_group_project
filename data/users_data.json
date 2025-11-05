@@ -146,7 +146,7 @@
                 "ms000000001434": "watched"
             }
         },
-        {
+{
             "_id": "u000000000002",
             "username": "salwa_h",
             "password": "salwa123",
@@ -158,13 +158,16 @@
             "about_me": "Full-stack developer who never misses a film festival. Documentaries and grounded dramas are my comfort zone.",
             "favorites_movies": [
                 {
-                    "_id": "ms000000000002"
-                },
-                {
                     "_id": "ms000000000004"
                 },
                 {
                     "_id": "ms000000000011"
+                },
+                {
+                    "_id": "ms000000000452"
+                }
+                {
+                    "_id": "ms000000000461"
                 }
             ],
             "favorites_people": [
@@ -177,17 +180,49 @@
                 {
                     "_id": "p000000000011"
                 }
+                {
+                    "_id": "p000000010844"
+                },
+                {
+                    "_id": "p000000016184"
+                },
+                {
+                    "_id": "p000000011236"
+                },
+                {
+                    "_id": "p000000001127"
+                },
+                {
+                    "_id": "p000000011283"
+                },
+                {
+                    "_id": "p000000015542"
+                }
             ],
             "reviews": [
                 {
                     "_id": "ms000000000004",
                     "review_text": "A quiet character study that lingers long after the credits. Stellar performances all around.",
+                    "helpful_votes": 215,
                     "date_posted": "2025-03-22"
                 },
                 {
                     "_id": "ms000000000011",
                     "review_text": "Animation with heart and soaring songs. The ocean-as-character concept is brilliant.",
+                    "helpful_votes": 178,
                     "date_posted": "2024-08-09"
+                }
+                {
+                    "_id": "ms000000000452",
+                    "date_posted": "2025-11-04",
+                    "helpful_votes": 0,
+                    "review_text": "Best movie of all time !!<3"
+                },
+                {
+                    "_id": "ms000000000462",
+                    "date_posted": "2025-11-04",
+                    "helpful_votes": 0,
+                    "review_text": "A really well-constructed story!"
                 }
             ],
             "friends": [
@@ -201,19 +236,119 @@
             ],
             "list": [
                 {
-                    "movies_series": [
+                    "created_at": "2025-11-04T22:01:16Z",
+                    "description": "suggestions that were made to me",
+                    "is_public": false,
+                    "items": [
                         {
-                            "_id": "ms000000000008"
+                            "added_at": "2025-11-04T22:01:16Z",
+                            "movie_id": "ms000000000008"
                         },
                         {
-                            "_id": "ms000000000013"
+                            "added_at": "2025-11-04T22:01:16Z",
+                            "movie_id": "ms000000000013"
+                        },
+                    ],
+                    "list_id": "lst_e861702ca3d0",
+                    "name": "Some suggestions",
+                    "type": "movies",
+                    "updated_at": "2025-11-04T22:37:22Z"
+                },
+                {
+                    "created_at": "2025-11-04T22:18:53Z",
+                    "description": "List of movies I could watch or rewatch in October",
+                    "is_public": true,
+                    "items": [
+                        {
+                            "added_at": "2025-11-04T22:19:02Z",
+                            "movie_id": "ms000000000456"
+                        },
+                        {
+                            "added_at": "2025-11-04T22:19:41Z",
+                            "movie_id": "ms000000000857"
+                        },
+                        {
+                            "added_at": "2025-11-04T22:21:48Z",
+                            "movie_id": "ms000000000927"
+                        },
+                        {
+                            "added_at": "2025-11-04T22:21:58Z",
+                            "movie_id": "ms000000000640"
+                        },
+                        {
+                            "added_at": "2025-11-04T22:22:10Z",
+                            "movie_id": "ms000000000745"
+                        },
+                        {
+                            "added_at": "2025-11-04T22:22:38Z",
+                            "movie_id": "ms000000000003"
                         }
-                    ]
+                    ],
+                    "list_id": "lst_42ee422894d7",
+                    "name": "My Halloween movies",
+                    "type": "movies",
+                    "updated_at": "2025-11-04T22:22:49Z"
+                },
+                {
+                    "created_at": "2025-11-04T22:24:37Z",
+                    "description": "Only good actors",
+                    "is_public": false,
+                    "items": [
+                        {
+                            "added_at": "2025-11-04T22:28:22Z",
+                            "person_id": "nm15529906"
+                        },
+                        {
+                            "added_at": "2025-11-04T22:29:16Z",
+                            "person_id": "nm6734881"
+                        }
+                    ],
+                    "list_id": "lst_89a60cd97490",
+                    "name": "Not because they're attractive;)",
+                    "type": "people",
+                    "updated_at": "2025-11-04T22:35:42Z"
                 }
             ],
-            "watch_statuses": {}
+            "watch_statuses": {
+                "ms000000000004": "watched",
+                "ms000000000011": "watched",
+                "ms000000000050": "plan",
+                "ms000000000106": "watched",
+                "ms000000000445": "plan",
+                "ms000000000452": "watched",
+                "ms000000000456": "watched",
+                "ms000000000457": "watched",
+                "ms000000000460": "watched",
+                "ms000000000461": "watched",
+                "ms000000000462": "watching",
+                "ms000000000596": "watching",
+                "ms000000000624": "plan",
+                "ms000000000663": "plan",
+                "ms000000000674": "watching",
+                "ms000000000698": "plan",
+                "ms000000000745": "plan",
+                "ms000000000772": "plan",
+                "ms000000000940": "plan",
+                "ms000000001220": "watched",
+                "ms000000001234": "plan",
+                "ms000000001439": "watched",
+                "ms000000001692": "watched"
+            },
+            "movie_ratings": {
+                "ms000000000004": 5,
+                "ms000000000011": 4,
+                "ms000000000106": 3,
+                "ms000000000452": 5,
+                "ms000000000456": 1,
+                "ms000000000457": 3,
+                "ms000000000460": 5,
+                "ms000000000461": 5,
+                "ms000000000462": 3,
+                "ms000000001220": 5,
+                "ms000000001439": 4,
+                "ms000000001692": 2
+            }
         },
-        {
             "_id": "u000000000003",
             "username": "nirina_c",
             "password": "nirina123",
