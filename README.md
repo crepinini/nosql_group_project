@@ -316,6 +316,10 @@ ChatGPT-5
 - use to search for errors in the code and understand them
 - Use to improve the visuals of the pages: Home.css and WatchList.css 
 - Use to understand how to implement a filter
+Learned to :
+  * Improve the visual appearance
+  * Discover code optimizations through AI suggestions
+  * Understand the implementation of a filter to connect to the database
 
 ### El Maadoudi Mehdi
 ChatGPT-5
