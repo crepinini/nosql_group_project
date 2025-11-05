@@ -2,20 +2,16 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { getStoredUser, subscribeToAuthChanges } from './Login/auth';
 import './Friends.css';
-import RecommendationRail from './RecommendationRail';
+import FavoritesRail from './FavoritesRail';
 import FavoritePeopleRail from './FavoritePeopleRail';
 
 export default function Friends() {
     const navigate = useNavigate();
 
-    // 👇 base de l'API users.py (Flask)
-    const USERS_API_BASE = 'http://localhost:5001'; // <-- CHANGEMENT
+    const USERS_API_BASE = 'http://localhost:5001';
 
-    // films vus par des amis
     const [friendsWatched, setFriendsWatched] = useState([]);
-    // films que des amis regardent en ce moment
     const [friendsWatching, setFriendsWatching] = useState([]);
-    // films que des amis prévoient de regarder
     const [friendsPlanning, setFriendsPlanning] = useState([]);
 
     const [loadingFriendStatus, setLoadingFriendStatus] = useState(false);
@@ -50,14 +46,11 @@ export default function Friends() {
         (async () => {
             try {
                 setLoadingProfile(true);
-
                 const res = await fetch(
-                    `${USERS_API_BASE}/myprofile?user_id=${encodeURIComponent(userId)}`, // <-- CHANGEMENT
+                    `${USERS_API_BASE}/myprofile?user_id=${encodeURIComponent(userId)}`,
                     { signal: controller.signal }
                 );
-
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
                 const data = await res.json();
                 setProfile(data);
             } catch (err) {
@@ -66,25 +59,19 @@ export default function Friends() {
                     setProfile(null);
                 }
             } finally {
-                if (!controller.signal.aborted) {
-                    setLoadingProfile(false);
-                }
+                if (!controller.signal.aborted) setLoadingProfile(false);
             }
         })();
 
         return () => controller.abort();
-    }, [authUser, USERS_API_BASE]); // <-- CHANGEMENT (ajoute USERS_API_BASE en dep)
+    }, [authUser, USERS_API_BASE]);
 
     // --- LOAD FRIEND DETAILS (from profile.friends list) ---
     const [friendsProfiles, setFriendsProfiles] = useState([]);
     const [loadingFriends, setLoadingFriends] = useState(false);
 
     useEffect(() => {
-        if (
-            !profile ||
-            !Array.isArray(profile.friends) ||
-            profile.friends.length === 0
-        ) {
+        if (!profile || !Array.isArray(profile.friends) || profile.friends.length === 0) {
             setFriendsProfiles([]);
             return;
         }
@@ -102,7 +89,7 @@ export default function Friends() {
 
                         try {
                             const res = await fetch(
-                                `${USERS_API_BASE}/users/${encodeURIComponent(id)}`, // <-- CHANGEMENT
+                                `${USERS_API_BASE}/users/${encodeURIComponent(id)}`,
                                 { signal: controller.signal },
                             );
                             if (!res.ok) return null;
@@ -121,14 +108,12 @@ export default function Friends() {
                     setFriendsProfiles([]);
                 }
             } finally {
-                if (!controller.signal.aborted) {
-                    setLoadingFriends(false);
-                }
+                if (!controller.signal.aborted) setLoadingFriends(false);
             }
         })();
 
         return () => controller.abort();
-    }, [profile?.friends, USERS_API_BASE]); // <-- CHANGEMENT
+    }, [profile?.friends, USERS_API_BASE]);
 
     // --- SORT FRIENDS ALPHABETICALLY FOR DISPLAY ---
     const sortedFriends = useMemo(() => {
@@ -171,7 +156,7 @@ export default function Friends() {
 
         try {
             const res = await fetch(
-                `${USERS_API_BASE}/users/${authUser._id}/friends/${friendId}`, // <-- CHANGEMENT
+                `${USERS_API_BASE}/users/${authUser._id}/friends/${friendId}`,
                 { method: 'DELETE' }
             );
 
@@ -225,7 +210,7 @@ export default function Friends() {
                 setSearchError(null);
 
                 const res = await fetch(
-                    `${USERS_API_BASE}/users?q=${encodeURIComponent(q)}&limit=${encodeURIComponent(50)}`, // <-- CHANGEMENT
+                    `${USERS_API_BASE}/users?q=${encodeURIComponent(q)}&limit=${encodeURIComponent(50)}`,
                     { signal: controller.signal }
                 );
 
@@ -257,7 +242,7 @@ export default function Friends() {
             clearTimeout(timer);
             controller.abort();
         };
-    }, [searchQuery, USERS_API_BASE]); // <-- CHANGEMENT
+    }, [searchQuery, USERS_API_BASE]);
 
     // --- AGGREGATE FRIENDS' FAVORITES ---
     const [friendsFavMovies, setFriendsFavMovies] = useState([]);
@@ -281,7 +266,7 @@ export default function Friends() {
                     if (!fid) continue;
                     try {
                         const res = await fetch(
-                            `${USERS_API_BASE}/myprofile?user_id=${encodeURIComponent(fid)}`, // <-- CHANGEMENT
+                            `${USERS_API_BASE}/myprofile?user_id=${encodeURIComponent(fid)}`,
                             { signal: controller.signal }
                         );
                         if (!res.ok) continue;
@@ -348,13 +333,12 @@ export default function Friends() {
         })();
 
         return () => controller.abort();
-    }, [friendsProfiles, USERS_API_BASE]); // <-- CHANGEMENT
+    }, [friendsProfiles, USERS_API_BASE]);
 
     // --- REQUEST MAPS (pending requests) ---
     const [requestSentMap, setRequestSentMap] = useState({});
     const [serverPendingMap, setServerPendingMap] = useState({});
 
-    // load "already pending?" from backend for each result
     useEffect(() => {
         if (!authUser?._id) return;
         if (!Array.isArray(searchResults) || searchResults.length === 0) {
@@ -373,7 +357,7 @@ export default function Friends() {
 
                 try {
                     const res = await fetch(
-                        `${USERS_API_BASE}/friend-requests/${targetId}` // <-- CHANGEMENT
+                        `${USERS_API_BASE}/friend-requests/${targetId}`
                     );
                     if (!res.ok) continue;
 
@@ -399,7 +383,7 @@ export default function Friends() {
         return () => {
             abort = true;
         };
-    }, [authUser?._id, searchResults, USERS_API_BASE]); // <-- CHANGEMENT
+    }, [authUser?._id, searchResults, USERS_API_BASE]);
 
     async function handleSendFriendRequest(targetId) {
         if (!authUser?._id || !targetId) return;
@@ -407,7 +391,7 @@ export default function Friends() {
         try {
             setRequestSentMap((prev) => ({ ...prev, [targetId]: true }));
 
-            const res = await fetch(`${USERS_API_BASE}/friend-request`, { // <-- CHANGEMENT
+            const res = await fetch(`${USERS_API_BASE}/friend-request`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -448,7 +432,7 @@ export default function Friends() {
 
         try {
             const res = await fetch(
-                `${USERS_API_BASE}/friend-request/${authUser._id}/${targetId}/cancel`, // <-- CHANGEMENT
+                `${USERS_API_BASE}/friend-request/${authUser._id}/${targetId}/cancel`,
                 { method: 'POST' }
             );
 
@@ -549,9 +533,7 @@ export default function Friends() {
                     }
                 }
 
-                if (!cancelled) {
-                    setList(results);
-                }
+                if (!cancelled) setList(results);
             })();
 
             return () => {
@@ -588,7 +570,7 @@ export default function Friends() {
                         if (!fid) return null;
                         try {
                             const r = await fetch(
-                                `${USERS_API_BASE}/myprofile?user_id=${encodeURIComponent(fid)}` // <-- CHANGEMENT
+                                `${USERS_API_BASE}/myprofile?user_id=${encodeURIComponent(fid)}`
                             );
                             if (!r.ok) return null;
                             return await r.json();
@@ -609,13 +591,9 @@ export default function Friends() {
 
                     for (const movieId of Object.keys(ws)) {
                         const status = ws[movieId];
-                        if (status === 'watched') {
-                            watchedIds.add(movieId);
-                        } else if (status === 'watching') {
-                            watchingIds.add(movieId);
-                        } else if (status === 'plan') {
-                            planningIds.add(movieId);
-                        }
+                        if (status === 'watched') watchedIds.add(movieId);
+                        else if (status === 'watching') watchingIds.add(movieId);
+                        else if (status === 'plan') planningIds.add(movieId);
                     }
                 }
 
@@ -657,24 +635,20 @@ export default function Friends() {
             } catch (err) {
                 console.error('friend status aggregation failed', err);
                 if (!aborted) {
-                    setFriendStatusError(
-                        "Couldn't load what your friends are watching."
-                    );
+                    setFriendStatusError("Couldn't load what your friends are watching.");
                     setFriendsWatched([]);
                     setFriendsWatching([]);
                     setFriendsPlanning([]);
                 }
             } finally {
-                if (!aborted) {
-                    setLoadingFriendStatus(false);
-                }
+                if (!aborted) setLoadingFriendStatus(false);
             }
         })();
 
         return () => {
             aborted = true;
         };
-    }, [friendsProfiles, USERS_API_BASE]); // <-- CHANGEMENT
+    }, [friendsProfiles, USERS_API_BASE]);
 
     function renderFriendCardGrid(friendObj) {
         const { id, name, location, initials } = friendObj;
@@ -779,19 +753,11 @@ export default function Friends() {
                     {searchResults.length > 0 && (
                         <div className="search-grid">
                             {searchResults.map((user) => {
-                                const id =
-                                    user._id || user.imdb_user_id;
-                                const name =
-                                    user.full_name ||
-                                    user.username ||
-                                    'Unknown User';
-                                const city =
-                                    user.location_city || '';
-                                const country =
-                                    user.location_country || '';
-                                const location = [city, country]
-                                    .filter(Boolean)
-                                    .join(', ') || '—';
+                                const id = user._id || user.imdb_user_id;
+                                const name = user.full_name || user.username || 'Unknown User';
+                                const city = user.location_city || '';
+                                const country = user.location_country || '';
+                                const location = [city, country].filter(Boolean).join(', ') || '—';
                                 const initials = name
                                     .split(' ')
                                     .map((n) => n[0])
@@ -802,8 +768,7 @@ export default function Friends() {
                                 const itsMe =
                                     authUser &&
                                     (authUser._id === id ||
-                                        authUser.username ===
-                                        user.username);
+                                        authUser.username === user.username);
 
                                 const alreadyFriend =
                                     profile?.friends?.some((fr) => {
@@ -819,66 +784,41 @@ export default function Friends() {
                                     serverPendingMap[id] === true;
 
                                 return (
-                                    <div
-                                        key={id || name}
-                                        className="search-card"
-                                    >
+                                    <div key={id || name} className="search-card">
                                         <div
                                             className="search-card-clickable"
                                             role="button"
                                             tabIndex={0}
                                             onClick={() => {
-                                                if (id)
-                                                    navigate(
-                                                        `/profile?user_id=${id}`
-                                                    );
+                                                if (id) navigate(`/profile?user_id=${id}`);
                                             }}
                                             onKeyDown={(e) => {
-                                                if (
-                                                    (e.key ===
-                                                        'Enter' ||
-                                                        e.key ===
-                                                        ' ') &&
-                                                    id
-                                                ) {
-                                                    navigate(
-                                                        `/profile?user_id=${id}`
-                                                    );
+                                                if ((e.key === 'Enter' || e.key === ' ') && id) {
+                                                    navigate(`/profile?user_id=${id}`);
                                                 }
                                             }}
                                         >
                                             <div className="friend-avatar">
                                                 <span>{initials}</span>
                                             </div>
-                                            <h3 className="friend-name">
-                                                {name}
-                                            </h3>
-                                            <p className="friend-meta">
-                                                {location}
-                                            </p>
+                                            <h3 className="friend-name">{name}</h3>
+                                            <p className="friend-meta">{location}</p>
                                         </div>
 
                                         {itsMe ? (
-                                            <div className="friend-action-btn friend-action-btn-disabled">
-                                                you
-                                            </div>
+                                            <div className="friend-action-btn friend-action-btn-disabled">you</div>
                                         ) : alreadyFriend ? (
-                                            <div className="friend-action-btn friend-action-btn-disabled">
-                                                ✓ Friends
-                                            </div>
+                                            <div className="friend-action-btn friend-action-btn-disabled">✓ Friends</div>
                                         ) : alreadyRequested ? (
                                             <button
                                                 className="friend-action-btn"
                                                 style={{
-                                                    background:
-                                                        'rgba(255,255,255,0.08)',
+                                                    background: 'rgba(255,255,255,0.08)',
                                                     color: '#ccc',
                                                     border: '1px solid rgba(255,255,255,0.2)',
                                                 }}
                                                 onClick={async () => {
-                                                    await handleCancelFriendRequest(
-                                                        id
-                                                    );
+                                                    await handleCancelFriendRequest(id);
                                                 }}
                                             >
                                                 Cancel request
@@ -887,9 +827,7 @@ export default function Friends() {
                                             <button
                                                 className="friend-action-btn"
                                                 onClick={async () => {
-                                                    await handleSendFriendRequest(
-                                                        id
-                                                    );
+                                                    await handleSendFriendRequest(id);
                                                 }}
                                             >
                                                 + Add friend
@@ -907,61 +845,45 @@ export default function Friends() {
                         !searchBusy &&
                         !searchError && (
                             <p className="friends-empty">
-                                No users found for “
-                                {searchQuery.trim()}”.
+                                No users found for “{searchQuery.trim()}”.
                             </p>
                         )}
                 </section>
+
+
+                {/* FRIEND ACTIVITY RAILS — maintenant via FavoritesRail */}
+                <section className="friends-section">
+                    <FavoritesRail
+                        title="Friends’ Favorite Movies & Series"
+                        items={friendsFavMovies}
+                    />
+
+                    <FavoritesRail
+                        title="Your friends watched"
+                        items={friendsWatched}
+                    />
+
+                    <FavoritesRail
+                        title="Your friends are watching"
+                        items={friendsWatching}
+                    />
+
+                    <FavoritesRail
+                        title="Your friends are going to watch"
+                        items={friendsPlanning}
+                    />
+                </section>
+
+                <section className="friends-favorites">
+                    <FavoritePeopleRail
+                        titleOverride="Friends’ Favorite People (Crew & Cast)"
+                        subtitleOverride="Actors, directors, and creators your friends love"
+                        peopleRefs={friendsFavPeople.map((p) => ({
+                            _id: p._id || p.id || p.person_id,
+                        }))}
+                    />
+                </section>
             </div>
-
-            {/* FRIEND ACTIVITY RAILS */}
-            <section className="friends-section">
-                <RecommendationRail
-                    title="Friends’ Favorite Movies & Series"
-                    subtitle="What your friends love the most"
-                    items={friendsFavMovies}
-                    loading={loadingFriends}
-                    error={null}
-                    emptyMessage="Your friends haven’t added any favorites yet."
-                />
-
-                <RecommendationRail
-                    title="Your friends watched"
-                    subtitle="Recently watched by your friends"
-                    items={friendsWatched}
-                    loading={loadingFriendStatus}
-                    error={friendStatusError}
-                    emptyMessage="None of your friends logged anything as watched yet."
-                />
-
-                <RecommendationRail
-                    title="Your friends are watching"
-                    subtitle="Currently being watched"
-                    items={friendsWatching}
-                    loading={loadingFriendStatus}
-                    error={friendStatusError}
-                    emptyMessage="None of your friends are watching something right now."
-                />
-
-                <RecommendationRail
-                    title="Your friends are going to watch"
-                    subtitle="On their 'plan to watch' lists"
-                    items={friendsPlanning}
-                    loading={loadingFriendStatus}
-                    error={friendStatusError}
-                    emptyMessage="No upcoming plans from your friends yet."
-                />
-            </section>
-
-            <section className="friends-favorites">
-                <FavoritePeopleRail
-                    titleOverride="Friends’ Favorite People (Crew & Cast)"
-                    subtitleOverride="Actors, directors, and creators your friends love"
-                    peopleRefs={friendsFavPeople.map((p) => ({
-                        _id: p._id || p.id || p.person_id,
-                    }))}
-                />
-            </section>
         </div>
     );
 }

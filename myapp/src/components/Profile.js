@@ -5,8 +5,6 @@ import FavoritesRail from './FavoritesRail';
 import FavoritePeopleRail from './FavoritePeopleRail';
 import './MoviePeople.css'; // IMPORTANT pour le style du rail
 
-import './RecommendationRail.css';
-
 
 import './Profile.css';
 

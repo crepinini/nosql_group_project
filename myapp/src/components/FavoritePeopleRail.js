@@ -176,7 +176,6 @@ const FavoritePeopleRail = ({
                 <div className="movie-people__group" key="favorite-people-group">
                     {!hideGroupHeader && (
                         <div className="movie-people__group-header">
-                            <h3>People you follow</h3>
                         </div>
                     )}
 
