@@ -146,7 +146,7 @@
                 "ms000000001434": "watched"
             }
         },
-{
+        {
             "_id": "u000000000002",
             "username": "salwa_h",
             "password": "salwa123",
@@ -165,7 +165,7 @@
                 },
                 {
                     "_id": "ms000000000452"
-                }
+                },
                 {
                     "_id": "ms000000000461"
                 }
@@ -179,7 +179,7 @@
                 },
                 {
                     "_id": "p000000000011"
-                }
+                },
                 {
                     "_id": "p000000010844"
                 },
@@ -211,7 +211,7 @@
                     "review_text": "Animation with heart and soaring songs. The ocean-as-character concept is brilliant.",
                     "helpful_votes": 178,
                     "date_posted": "2024-08-09"
-                }
+                },
                 {
                     "_id": "ms000000000452",
                     "date_posted": "2025-11-04",
@@ -247,7 +247,7 @@
                         {
                             "added_at": "2025-11-04T22:01:16Z",
                             "movie_id": "ms000000000013"
-                        },
+                        }
                     ],
                     "list_id": "lst_e861702ca3d0",
                     "name": "Some suggestions",
@@ -349,6 +349,7 @@
                 "ms000000001692": 2
             }
         },
+        {
             "_id": "u000000000003",
             "username": "nirina_c",
             "password": "nirina123",
