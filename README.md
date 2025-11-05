@@ -289,7 +289,7 @@ docker-compose build api_users
 ## Task Repartition
 - **Nirina Crépin (crepinini)**
   - Built Recommendations, Cast & Crew, Movie Detail, People Detail, MyList, and Sign In/Sign Up page.
-  - Set up the repository structure, seeded MongoDB, created `movies_data.json`, `people_data.json`, and initial CRUD in `api_movies_series` and `api_people`. Also created and updated some user CRUD methods in `api_user`.
+  - Set up the repository structure, authentification, seeded MongoDB, created `movies_data.json`, `people_data.json`, and initial CRUD in `api_movies_series` and `api_people`. Also created and updated some user CRUD methods in `api_user`.
 - **Salwa Hammou (SalwaHm)**
   - Built Home, Movies, Series, and WatchList pages with search, filters, pagination, and watchlist login enforcement on those pages.
   - Created user CRUD methods in `api_user`.
