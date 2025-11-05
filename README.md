@@ -292,7 +292,7 @@ docker-compose build api_users
   - Set up the repository structure, seeded MongoDB, created `movies_data.json`, `people_data.json`, and initial CRUD in `api_movies_series` and `api_people`. Also created and updated some user CRUD methods in `api_user`.
 - **Salwa Hammou (SalwaHm)**
   - Built Home, Movies, Series, and WatchList pages with search, filters, pagination, and watchlist login enforcement on those pages.
-  - Created user CRUD methods in `api_user`.
+  - Created user CRUD methods in `api_user` and Connection to MongoDb & Redis 
 - **El Maadoudi Mehdi (melmagenwise)**
   - Built Profile and MyFriends pages, including friend request workflow, profile editing, statistics, and favorite people rails.
   - Created user CRUD methods in `api_user`.
@@ -311,7 +311,11 @@ ChatGPT-5:
   * Coordinate fixes across React, Flask, MongoDB, and Redis without losing momentum.
 
 ### Salwa Hammou
-- 
+ChatGPT-5
+- Use to understand error messages
+- use to search for errors in the code and understand them
+- Use to improve the visuals of the pages: Home.css and WatchList.css 
+- Use to understand how to implement a filter
 
 ### El Maadoudi Mehdi
 ChatGPT-5
